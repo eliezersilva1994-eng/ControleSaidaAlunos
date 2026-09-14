@@ -42,3 +42,5 @@ Eliézer Evangelista Silva — Estudante de Sistemas de Informação
 Kamylla Machado Rezende — Estudante de Sistemas de Informação
 
 Paulo Victor Matias Ferreira — Estudante de Sistemas de Informação
+
+Maria Luiza
