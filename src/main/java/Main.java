@@ -1,7 +1,9 @@
-import dao.AlunoDAO;
 import dao.RegistroSaidaDAO;
-import dao.ResponsavelDAO;
-import dao.TurmaDAO;
+import service.AlunoService;
+import service.RegistroSaidaService;
+import service.RegraNegocioException;
+import service.ResponsavelService;
+import service.TurmaService;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -9,57 +11,78 @@ import java.util.List;
 
 /**
  * Ponto de entrada da aplicação.
- * Por enquanto demonstra o fluxo completo do sistema; a lógica real
- * de acesso a dados vive nas classes do pacote dao.
+ * Por enquanto demonstra o fluxo completo do sistema através da camada
+ * service, que concentra as regras de negócio; os DAOs cuidam só do acesso
+ * puro a dados.
  */
 public class Main {
 
     public static void main(String[] args) {
         try (Connection conexao = ConexaoBanco.conectar()) {
 
-            TurmaDAO turmaDAO = new TurmaDAO(conexao);
-            AlunoDAO alunoDAO = new AlunoDAO(conexao);
-            ResponsavelDAO responsavelDAO = new ResponsavelDAO(conexao);
-            RegistroSaidaDAO registroSaidaDAO = new RegistroSaidaDAO(conexao);
+            TurmaService turmaService = new TurmaService(conexao);
+            AlunoService alunoService = new AlunoService(conexao);
+            ResponsavelService responsavelService = new ResponsavelService(conexao);
+            RegistroSaidaService registroSaidaService = new RegistroSaidaService(conexao);
 
             // 1. Cadastro básico
-            int turmaId = turmaDAO.inserir("2º Ano A");
-            int alunoYasminId = alunoDAO.inserir("Yasmin Ferreira", turmaId);
-            int alunoPedroId = alunoDAO.inserir("Pedro Souza", turmaId);
+            int turmaId = turmaService.inserir("2º Ano A");
+            int alunoYasminId = alunoService.inserir("Yasmin Ferreira", turmaId);
+            int alunoPedroId = alunoService.inserir("Pedro Souza", turmaId);
 
-            // 2. Cadastro de responsáveis e vínculo com os alunos que podem retirar
-            int responsavelId = responsavelDAO.inserir("Maria Ferreira", "123.456.789-00", null);
-            responsavelDAO.vincularAluno(alunoYasminId, responsavelId);
+            // 2. Cadastro de responsável e vínculo com a aluna que ele pode retirar
+            int responsavelId = responsavelService.inserir("Maria Ferreira", "123.456.789-00", null);
+            responsavelService.vincularAluno(alunoYasminId, responsavelId);
 
-            // 3. Simula o totem: responsável chega e seleciona a aluna Yasmin
-            int registroId = registroSaidaDAO.chamarAluno(alunoYasminId, responsavelId);
+            // 3. Totem: responsável chega e seleciona a aluna Yasmin
+            int registroId = registroSaidaService.chamarAluno(alunoYasminId, responsavelId);
             System.out.println("Yasmin foi chamada! (registro id=" + registroId + ")");
 
-            // 4. Painel da sala antes da liberação do professor
-            imprimirPainel(registroSaidaDAO, turmaId);
+            imprimirPainel(registroSaidaService, turmaId);
+
+            // 4. Regra nova: tentar chamar a mesma aluna de novo antes da liberação
+            try {
+                registroSaidaService.chamarAluno(alunoYasminId, responsavelId);
+            } catch (RegraNegocioException e) {
+                System.out.println("\nBloqueio esperado (chamada duplicada): " + e.getMessage());
+            }
 
             // 5. Professor libera o aluno
-            registroSaidaDAO.liberarAluno(registroId);
+            registroSaidaService.liberarAluno(registroId);
             System.out.println("\nProfessor liberou a Yasmin.");
+            imprimirPainel(registroSaidaService, turmaId);
 
-            // 6. Painel da sala depois da liberação
-            imprimirPainel(registroSaidaDAO, turmaId);
-
-            // 7. Tentativa de retirada NÃO autorizada (Pedro não tem esse responsável vinculado)
+            // 6. Regra nova: tentar liberar de novo o mesmo registro
             try {
-                registroSaidaDAO.chamarAluno(alunoPedroId, responsavelId);
-            } catch (SQLException e) {
-                System.out.println("\nBloqueio esperado: " + e.getMessage());
+                registroSaidaService.liberarAluno(registroId);
+            } catch (RegraNegocioException e) {
+                System.out.println("\nBloqueio esperado (liberação duplicada): " + e.getMessage());
+            }
+
+            // 7. Regra nova: tentar chamar a aluna de novo, já liberada hoje
+            try {
+                registroSaidaService.chamarAluno(alunoYasminId, responsavelId);
+            } catch (RegraNegocioException e) {
+                System.out.println("\nBloqueio esperado (já liberada hoje): " + e.getMessage());
+            }
+
+            // 8. Retirada NÃO autorizada (Pedro não tem esse responsável vinculado)
+            try {
+                registroSaidaService.chamarAluno(alunoPedroId, responsavelId);
+            } catch (RegraNegocioException e) {
+                System.out.println("\nBloqueio esperado (não autorizado): " + e.getMessage());
             }
 
         } catch (SQLException e) {
-            System.out.println("Erro: " + e.getMessage());
+            System.out.println("Erro de banco de dados: " + e.getMessage());
+        } catch (RegraNegocioException e) {
+            System.out.println("Erro de regra de negócio: " + e.getMessage());
         }
     }
 
-    private static void imprimirPainel(RegistroSaidaDAO registroSaidaDAO, int turmaId) throws SQLException {
+    private static void imprimirPainel(RegistroSaidaService registroSaidaService, int turmaId) throws SQLException {
         System.out.println("\n--- Painel da sala (turma " + turmaId + ") ---");
-        List<RegistroSaidaDAO.StatusAluno> status = registroSaidaDAO.statusPorTurma(turmaId);
+        List<RegistroSaidaDAO.StatusAluno> status = registroSaidaService.statusPorTurma(turmaId);
         for (RegistroSaidaDAO.StatusAluno linha : status) {
             System.out.println(linha);
         }

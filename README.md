@@ -33,7 +33,7 @@ Banco de dados: PostgreSQL
 (demais tecnologias — front-end da tela da sala e app mobile — serão definidas conforme o projeto avança)
 Status
 
-🚧 Em desenvolvimento — projeto em fase inicial de estruturação.
+Em desenvolvimento — projeto em fase inicial de estruturação.
 
 Autor
 

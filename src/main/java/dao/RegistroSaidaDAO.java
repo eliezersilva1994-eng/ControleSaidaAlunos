@@ -19,16 +19,10 @@ public class RegistroSaidaDAO {
     }
 
     /**
-     * Registra que um responsável chegou e "chamou" um aluno pelo totem.
-     * Isso é o que muda o quadrado do aluno de cor na tela da sala.
-     * Lança SQLException se o responsável não estiver autorizado a retirar o aluno.
+     * Insere o registro de chamada de um aluno pelo totem (sem validar regras de
+     * negócio — isso é responsabilidade da camada service).
      */
-    public int chamarAluno(int alunoId, int responsavelId) throws SQLException {
-        ResponsavelDAO responsavelDAO = new ResponsavelDAO(conexao);
-        if (!responsavelDAO.estaAutorizado(alunoId, responsavelId)) {
-            throw new SQLException("Responsável não autorizado a retirar este aluno.");
-        }
-
+    public int inserirChamada(int alunoId, int responsavelId) throws SQLException {
         String sql = "INSERT INTO registro_saida (aluno_id, responsavel_id, status) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conexao.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, alunoId);
@@ -43,6 +37,49 @@ public class RegistroSaidaDAO {
             }
         }
         throw new SQLException("Falha ao registrar chamada, nenhum ID gerado.");
+    }
+
+    /**
+     * Busca o registro de saída mais recente de hoje para um aluno (ou null se
+     * ele ainda não foi chamado hoje). Usado pelo Service para impedir chamadas
+     * duplicadas ou chamar um aluno já liberado.
+     */
+    public RegistroSaida buscarUltimoDeHoje(int alunoId) throws SQLException {
+        String sql = "SELECT id, aluno_id, responsavel_id, horario, status FROM registro_saida " +
+                "WHERE aluno_id = ? AND horario::date = CURRENT_DATE " +
+                "ORDER BY horario DESC LIMIT 1";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, alunoId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapear(rs);
+                }
+            }
+        }
+        return null;
+    }
+
+    public RegistroSaida buscarPorId(int id) throws SQLException {
+        String sql = "SELECT id, aluno_id, responsavel_id, horario, status FROM registro_saida WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapear(rs);
+                }
+            }
+        }
+        return null;
+    }
+
+    private RegistroSaida mapear(ResultSet rs) throws SQLException {
+        return new RegistroSaida(
+                rs.getInt("id"),
+                rs.getInt("aluno_id"),
+                rs.getInt("responsavel_id"),
+                rs.getTimestamp("horario"),
+                rs.getString("status")
+        );
     }
 
     /**
