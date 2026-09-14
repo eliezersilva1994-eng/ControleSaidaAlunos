@@ -1,5 +1,7 @@
 import dao.RegistroSaidaDAO;
+import model.Usuario;
 import service.AlunoService;
+import service.AutenticacaoService;
 import service.RegistroSaidaService;
 import service.RegraNegocioException;
 import service.ResponsavelService;
@@ -24,6 +26,7 @@ public class Main {
             AlunoService alunoService = new AlunoService(conexao);
             ResponsavelService responsavelService = new ResponsavelService(conexao);
             RegistroSaidaService registroSaidaService = new RegistroSaidaService(conexao);
+            AutenticacaoService autenticacaoService = new AutenticacaoService(conexao);
 
             // 1. Cadastro básico
             int turmaId = turmaService.inserir("2º Ano A");
@@ -71,6 +74,27 @@ public class Main {
                 registroSaidaService.chamarAluno(alunoPedroId, responsavelId);
             } catch (RegraNegocioException e) {
                 System.out.println("\nBloqueio esperado (não autorizado): " + e.getMessage());
+            }
+
+            // 9. Autenticação: cadastro de uma professora e login
+            autenticacaoService.cadastrar("Carla Souza", "carla@escola.com", "senha123", Usuario.PERFIL_PROFESSOR);
+            System.out.println("\nProfessora cadastrada.");
+
+            Usuario logada = autenticacaoService.autenticar("carla@escola.com", "senha123");
+            System.out.println("Login OK: " + logada);
+
+            // 10. Regra nova: senha errada deve ser bloqueada com mensagem genérica
+            try {
+                autenticacaoService.autenticar("carla@escola.com", "senhaErrada");
+            } catch (RegraNegocioException e) {
+                System.out.println("\nBloqueio esperado (senha errada): " + e.getMessage());
+            }
+
+            // 11. Regra nova: e-mail duplicado no cadastro
+            try {
+                autenticacaoService.cadastrar("Outra Carla", "carla@escola.com", "outraSenha", Usuario.PERFIL_PROFESSOR);
+            } catch (RegraNegocioException e) {
+                System.out.println("\nBloqueio esperado (e-mail duplicado): " + e.getMessage());
             }
 
         } catch (SQLException e) {
