@@ -6,6 +6,7 @@ import service.RegistroSaidaService;
 import service.RegraNegocioException;
 import service.ResponsavelService;
 import service.TurmaService;
+import config.ConexaoBanco;
 
 import java.sql.Connection;
 import java.sql.SQLException;
