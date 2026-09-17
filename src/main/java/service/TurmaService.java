@@ -19,7 +19,13 @@ public class TurmaService {
         if (nome == null || nome.isBlank()) {
             throw new RegraNegocioException("Nome da turma é obrigatório.");
         }
-        return turmaDAO.inserir(nome.trim());
+
+        String nomeLimpo = nome.trim();
+        if (turmaDAO.existePorNome(nomeLimpo)) {
+            throw new RegraNegocioException("Já existe uma turma com esse nome.");
+        }
+
+        return turmaDAO.inserir(nomeLimpo);
     }
 
     public List<Turma> listarTodas() throws SQLException {

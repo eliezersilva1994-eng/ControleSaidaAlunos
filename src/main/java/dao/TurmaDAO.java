@@ -46,4 +46,17 @@ public class TurmaDAO {
         }
         return turmas;
     }
+
+    /**
+     * Verifica se já existe uma turma com esse nome (comparação exata).
+     */
+    public boolean existePorNome(String nome) throws SQLException {
+        String sql = "SELECT 1 FROM turma WHERE nome = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, nome);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
 }
