@@ -10,16 +10,18 @@ public class Usuario {
     private String email;
     private String senhaHash;
     private String perfil;
+    private Integer turmaId; // null = login sem turma fixa (ex: admin/secretaria)
 
     public Usuario() {
     }
 
-    public Usuario(int id, String nome, String email, String senhaHash, String perfil) {
+    public Usuario(int id, String nome, String email, String senhaHash, String perfil, Integer turmaId) {
         this.id = id;
         this.nome = nome;
         this.email = email;
         this.senhaHash = senhaHash;
         this.perfil = perfil;
+        this.turmaId = turmaId;
     }
 
     public int getId() {
@@ -62,8 +64,17 @@ public class Usuario {
         this.perfil = perfil;
     }
 
+    public Integer getTurmaId() {
+        return turmaId;
+    }
+
+    public void setTurmaId(Integer turmaId) {
+        this.turmaId = turmaId;
+    }
+
     @Override
     public String toString() {
-        return "Usuario{id=" + id + ", nome='" + nome + "', email='" + email + "', perfil='" + perfil + "'}";
+        return "Usuario{id=" + id + ", nome='" + nome + "', email='" + email + "', perfil='" + perfil
+                + "', turmaId=" + turmaId + "}";
     }
 }

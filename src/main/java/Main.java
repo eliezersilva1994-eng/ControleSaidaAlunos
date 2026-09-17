@@ -1,3 +1,4 @@
+import config.ConexaoBanco;
 import dao.RegistroSaidaDAO;
 import model.Usuario;
 import service.AlunoService;
@@ -6,7 +7,6 @@ import service.RegistroSaidaService;
 import service.RegraNegocioException;
 import service.ResponsavelService;
 import service.TurmaService;
-import config.ConexaoBanco;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -78,7 +78,7 @@ public class Main {
             }
 
             // 9. Autenticação: cadastro de uma professora e login
-            autenticacaoService.cadastrar("Carla Souza", "carla@escola.com", "senha123", Usuario.PERFIL_PROFESSOR);
+            autenticacaoService.cadastrar("Carla Souza", "carla@escola.com", "senha123", Usuario.PERFIL_PROFESSOR, null);
             System.out.println("\nProfessora cadastrada.");
 
             Usuario logada = autenticacaoService.autenticar("carla@escola.com", "senha123");
@@ -93,7 +93,7 @@ public class Main {
 
             // 11. Regra nova: e-mail duplicado no cadastro
             try {
-                autenticacaoService.cadastrar("Outra Carla", "carla@escola.com", "outraSenha", Usuario.PERFIL_PROFESSOR);
+                autenticacaoService.cadastrar("Outra Carla", "carla@escola.com", "outraSenha", Usuario.PERFIL_PROFESSOR, null);
             } catch (RegraNegocioException e) {
                 System.out.println("\nBloqueio esperado (e-mail duplicado): " + e.getMessage());
             }

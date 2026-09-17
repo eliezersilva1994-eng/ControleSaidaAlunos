@@ -16,10 +16,15 @@ public class AutenticacaoService {
     }
 
     /**
-     * Cadastra um novo usuário (professor ou admin). A senha nunca é guardada
-     * em texto puro — só o hash BCrypt vai para o banco.
+     * Cadastra um novo usuário. A senha nunca é guardada em texto puro — só
+     * o hash BCrypt vai para o banco.
+     *
+     * turmaId é opcional (pode ser null): usado para "logins de sala" — uma
+     * conta fixa vinculada a uma turma específica, que sempre mostra o
+     * painel daquela sala, independente de quem estiver logado ali.
+     * Contas de admin/secretaria, sem sala fixa, usam turmaId = null.
      */
-    public int cadastrar(String nome, String email, String senha, String perfil)
+    public int cadastrar(String nome, String email, String senha, String perfil, Integer turmaId)
             throws SQLException, RegraNegocioException {
 
         if (nome == null || nome.isBlank()) {
@@ -39,7 +44,7 @@ public class AutenticacaoService {
         }
 
         String senhaHash = BCrypt.hashpw(senha, BCrypt.gensalt());
-        return usuarioDAO.inserir(nome.trim(), email.trim().toLowerCase(), senhaHash, perfil);
+        return usuarioDAO.inserir(nome.trim(), email.trim().toLowerCase(), senhaHash, perfil, turmaId);
     }
 
     /**
