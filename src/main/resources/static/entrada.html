@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Controle de Saída de Alunos</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f2f4f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .caixa {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        p.detalhe { color: #6b7280; font-size: 14px; }
+        a { color: #4f46e5; }
+    </style>
+</head>
+<body>
+<div class="caixa">
+    <h1 id="saudacao">Login realizado</h1>
+    <p class="detalhe">A tela de administração ainda está em construção.</p>
+    <p><a href="index.html">Sair</a></p>
+</div>
+
+<script>
+    const usuario = JSON.parse(localStorage.getItem('usuarioLogado') || 'null');
+    if (!usuario) {
+        window.location.href = 'index.html';
+    } else {
+        document.getElementById('saudacao').textContent = `Olá, ${usuario.nome}!`;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel da Sala</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #111827;
+            color: white;
+            margin: 0;
+            padding: 32px;
+        }
+        h1 {
+            font-size: 22px;
+            margin: 0 0 4px;
+        }
+        p.atualizado {
+            color: #9ca3af;
+            font-size: 13px;
+            margin: 0 0 24px;
+        }
+        .grade {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .quadrado {
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+        .status-aguardando { background: #374151; color: #d1d5db; }
+        .status-chamado { background: #b45309; color: white; }
+        .status-liberado { background: #15803d; color: white; }
+        .vazio { color: #9ca3af; }
+    </style>
+</head>
+<body>
+<h1 id="titulo">Painel da Sala</h1>
+<p class="atualizado" id="ultimaAtualizacao">Carregando...</p>
+
+<div class="grade" id="grade"></div>
+
+<script>
+    const parametros = new URLSearchParams(window.location.search);
+    const turmaId = parametros.get('turmaId');
+
+    if (!turmaId) {
+        document.getElementById('titulo').textContent = 'Turma não especificada';
+    }
+
+    async function atualizarPainel() {
+        try {
+            const resposta = await fetch(`/api/registros/status?turmaId=${turmaId}`);
+            const alunos = await resposta.json();
+
+            const grade = document.getElementById('grade');
+            grade.innerHTML = '';
+
+            if (alunos.length === 0) {
+                grade.innerHTML = '<p class="vazio">Nenhum aluno cadastrado nesta turma.</p>';
+            } else {
+                for (const aluno of alunos) {
+                    const div = document.createElement('div');
+                    div.className = `quadrado status-${aluno.status}`;
+                    div.textContent = aluno.nomeAluno;
+                    grade.appendChild(div);
+                }
+            }
+
+            const agora = new Date().toLocaleTimeString('pt-BR');
+            document.getElementById('ultimaAtualizacao').textContent = `Atualizado às ${agora}`;
+
+        } catch (erro) {
+            document.getElementById('ultimaAtualizacao').textContent =
+                'Não foi possível atualizar. Tentando novamente...';
+        }
+    }
+
+    if (turmaId) {
+        atualizarPainel();
+        // Atualiza a cada 4 segundos (polling) — simples e robusto,
+        // funciona mesmo em navegadores de TV mais limitados.
+        setInterval(atualizarPainel, 4000);
+    }
+</script>
+</body>
+</html>

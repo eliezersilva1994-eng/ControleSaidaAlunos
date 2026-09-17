@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Saída de Alunos — Login</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f2f4f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .caixa {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 360px;
+        }
+        h1 {
+            font-size: 20px;
+            margin: 0 0 4px;
+            color: #1a1a2e;
+        }
+        p.subtitulo {
+            margin: 0 0 24px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #a5a6f0;
+            cursor: not-allowed;
+        }
+        .erro {
+            background: #fef2f2;
+            color: #b91c1c;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="caixa">
+    <h1>Controle de Saída de Alunos</h1>
+    <p class="subtitulo">Entre com seu e-mail e senha</p>
+
+    <div class="erro" id="mensagemErro"></div>
+
+    <form id="formularioLogin">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" required autocomplete="username">
+
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" required autocomplete="current-password">
+
+        <button type="submit" id="botaoEntrar">Entrar</button>
+    </form>
+</div>
+
+<script>
+    const formulario = document.getElementById('formularioLogin');
+    const botaoEntrar = document.getElementById('botaoEntrar');
+    const mensagemErro = document.getElementById('mensagemErro');
+
+    formulario.addEventListener('submit', async (evento) => {
+        evento.preventDefault();
+        mensagemErro.style.display = 'none';
+        botaoEntrar.disabled = true;
+        botaoEntrar.textContent = 'Entrando...';
+
+        const email = document.getElementById('email').value;
+        const senha = document.getElementById('senha').value;
+
+        try {
+            const resposta = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, senha })
+            });
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                mostrarErro(dados.erro || 'Não foi possível entrar.');
+                return;
+            }
+
+            // Guarda os dados do usuário logado para as próximas páginas
+            // usarem (só neste navegador — não é enviado a mais ninguém).
+            localStorage.setItem('usuarioLogado', JSON.stringify(dados));
+
+            if (dados.turmaId) {
+                // Login de sala: vai direto para o painel daquela turma.
+                window.location.href = `painel.html?turmaId=${dados.turmaId}`;
+            } else {
+                // Conta sem sala fixa (ex: admin) — ainda não temos uma
+                // tela de administração; por ora só confirma o login.
+                window.location.href = 'entrada.html';
+            }
+
+        } catch (erro) {
+            mostrarErro('Não foi possível conectar ao servidor. Tente novamente.');
+        } finally {
+            botaoEntrar.disabled = false;
+            botaoEntrar.textContent = 'Entrar';
+        }
+    });
+
+    function mostrarErro(texto) {
+        mensagemErro.textContent = texto;
+        mensagemErro.style.display = 'block';
+    }
+</script>
+</body>
+</html>
