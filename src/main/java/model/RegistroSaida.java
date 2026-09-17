@@ -4,9 +4,10 @@ import java.sql.Timestamp;
 
 public class RegistroSaida {
 
-    // Status possíveis do fluxo de saída de um aluno
+    // Único status possível hoje: o aluno foi chamado pelo totem. Depois
+    // disso, o fluxo daquele aluno termina — não há confirmação digital de
+    // entrega, o professor apenas manda o aluno para a porta.
     public static final String STATUS_CHAMADO = "chamado";
-    public static final String STATUS_LIBERADO = "liberado";
 
     private int id;
     private int alunoId;

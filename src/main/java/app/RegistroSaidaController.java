@@ -13,8 +13,8 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * O coração do sistema: chamar um aluno pelo totem, o professor liberar,
- * e o painel da sala consultando o status em tempo real.
+ * O coração do sistema: chamar um aluno pelo totem, e o painel da sala
+ * consultando o status em tempo real.
  */
 @RestController
 @RequestMapping("/api/registros")
@@ -29,25 +29,6 @@ public class RegistroSaidaController {
             RegistroSaidaService registroSaidaService = new RegistroSaidaService(conexao);
             int registroId = registroSaidaService.chamarAluno(requisicao.alunoId(), requisicao.responsavelId());
             return ResponseEntity.ok(new ChamarAlunoResponse(registroId));
-
-        } catch (RegraNegocioException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));
-
-        } catch (SQLException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Professor libera o aluno depois de ver o quadrado mudar de cor.
-     */
-    @PostMapping("/{id}/liberar")
-    public ResponseEntity<?> liberar(@PathVariable int id) {
-        try (Connection conexao = ConexaoBanco.conectar()) {
-            RegistroSaidaService registroSaidaService = new RegistroSaidaService(conexao);
-            registroSaidaService.liberarAluno(id);
-            return ResponseEntity.ok(new MensagemResponse("Aluno liberado com sucesso."));
 
         } catch (RegraNegocioException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));

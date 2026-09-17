@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retirada de Aluno</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f2f4f7;
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        h1 {
+            text-align: center;
+            color: #1a1a2e;
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        p.instrucao {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+        .grade-opcoes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 14px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .opcao {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px 16px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #1a1a2e;
+            cursor: pointer;
+            text-align: center;
+        }
+        .opcao:active {
+            background: #4f46e5;
+            color: white;
+        }
+        .botao-voltar {
+            display: block;
+            margin: 24px auto 0;
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: 15px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .tela-confirmacao {
+            max-width: 400px;
+            margin: 60px auto;
+            text-align: center;
+        }
+        .tela-confirmacao.sucesso h2 { color: #15803d; }
+        .tela-confirmacao.erro h2 { color: #b91c1c; }
+        .vazio {
+            text-align: center;
+            color: #9ca3af;
+            margin-top: 40px;
+        }
+        .escondido { display: none; }
+    </style>
+</head>
+<body>
+<div id="telaTurma">
+    <h1>Retirada de Aluno</h1>
+    <p class="instrucao">Selecione a turma</p>
+    <div class="grade-opcoes" id="listaTurmas"></div>
+</div>
+
+<div id="telaAluno" class="escondido">
+    <h1>Retirada de Aluno</h1>
+    <p class="instrucao">Selecione o aluno</p>
+    <div class="grade-opcoes" id="listaAlunos"></div>
+    <button class="botao-voltar" onclick="voltarParaTurmas()">← Voltar</button>
+</div>
+
+<div id="telaResponsavel" class="escondido">
+    <h1>Retirada de Aluno</h1>
+    <p class="instrucao">Quem está retirando?</p>
+    <div class="grade-opcoes" id="listaResponsaveis"></div>
+    <button class="botao-voltar" onclick="voltarParaAlunos()">← Voltar</button>
+</div>
+
+<div id="telaFinal" class="escondido tela-confirmacao">
+    <h2 id="mensagemFinal"></h2>
+    <p id="detalheFinal" style="color:#6b7280;"></p>
+    <button class="botao-voltar" onclick="reiniciar()">← Voltar ao início</button>
+</div>
+
+<script>
+    let turmaSelecionada = null;
+    let alunoSelecionado = null;
+
+    async function carregarTurmas() {
+        const resposta = await fetch('/api/turmas');
+        const turmas = await resposta.json();
+
+        const lista = document.getElementById('listaTurmas');
+        lista.innerHTML = '';
+        for (const turma of turmas) {
+            const botao = document.createElement('div');
+            botao.className = 'opcao';
+            botao.textContent = turma.nome;
+            botao.onclick = () => selecionarTurma(turma);
+            lista.appendChild(botao);
+        }
+    }
+
+    async function selecionarTurma(turma) {
+        turmaSelecionada = turma;
+        mostrarTela('telaAluno');
+
+        const resposta = await fetch(`/api/alunos?turmaId=${turma.id}`);
+        const alunos = await resposta.json();
+
+        const lista = document.getElementById('listaAlunos');
+        lista.innerHTML = '';
+
+        if (alunos.length === 0) {
+            lista.innerHTML = '<p class="vazio">Nenhum aluno cadastrado nesta turma.</p>';
+            return;
+        }
+
+        for (const aluno of alunos) {
+            const botao = document.createElement('div');
+            botao.className = 'opcao';
+            botao.textContent = aluno.nome;
+            botao.onclick = () => selecionarAluno(aluno);
+            lista.appendChild(botao);
+        }
+    }
+
+    async function selecionarAluno(aluno) {
+        alunoSelecionado = aluno;
+        mostrarTela('telaResponsavel');
+
+        const resposta = await fetch(`/api/responsaveis?alunoId=${aluno.id}`);
+        const responsaveis = await resposta.json();
+
+        const lista = document.getElementById('listaResponsaveis');
+        lista.innerHTML = '';
+
+        if (responsaveis.length === 0) {
+            lista.innerHTML = '<p class="vazio">Nenhum responsável autorizado cadastrado para este aluno. Procure a secretaria.</p>';
+            return;
+        }
+
+        for (const responsavel of responsaveis) {
+            const botao = document.createElement('div');
+            botao.className = 'opcao';
+            botao.textContent = responsavel.nome;
+            botao.onclick = () => confirmarRetirada(responsavel);
+            lista.appendChild(botao);
+        }
+    }
+
+    async function confirmarRetirada(responsavel) {
+        try {
+            const resposta = await fetch('/api/registros/chamar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alunoId: alunoSelecionado.id,
+                    responsavelId: responsavel.id
+                })
+            });
+
+            const dados = await resposta.json();
+            mostrarTela('telaFinal');
+            const telaFinal = document.getElementById('telaFinal');
+
+            if (resposta.ok) {
+                telaFinal.className = 'tela-confirmacao sucesso';
+                document.getElementById('mensagemFinal').textContent =
+                    `${alunoSelecionado.nome} foi chamado(a)!`;
+                document.getElementById('detalheFinal').textContent =
+                    'Aguarde na entrada. O professor foi avisado.';
+            } else {
+                telaFinal.className = 'tela-confirmacao erro';
+                document.getElementById('mensagemFinal').textContent = 'Não foi possível chamar o aluno';
+                document.getElementById('detalheFinal').textContent = dados.erro || '';
+            }
+
+            // Volta para a tela inicial automaticamente, pronto para a
+            // próxima família usar o totem.
+            setTimeout(reiniciar, 6000);
+
+        } catch (erro) {
+            mostrarTela('telaFinal');
+            const telaFinal = document.getElementById('telaFinal');
+            telaFinal.className = 'tela-confirmacao erro';
+            document.getElementById('mensagemFinal').textContent = 'Erro de conexão';
+            document.getElementById('detalheFinal').textContent = 'Tente novamente.';
+            setTimeout(reiniciar, 6000);
+        }
+    }
+
+    function mostrarTela(idTela) {
+        const telas = ['telaTurma', 'telaAluno', 'telaResponsavel', 'telaFinal'];
+        for (const id of telas) {
+            document.getElementById(id).classList.toggle('escondido', id !== idTela);
+        }
+    }
+
+    function voltarParaTurmas() {
+        turmaSelecionada = null;
+        mostrarTela('telaTurma');
+    }
+
+    function voltarParaAlunos() {
+        alunoSelecionado = null;
+        mostrarTela('telaAluno');
+    }
+
+    function reiniciar() {
+        turmaSelecionada = null;
+        alunoSelecionado = null;
+        mostrarTela('telaTurma');
+        carregarTurmas();
+    }
+
+    carregarTurmas();
+</script>
+</body>
+</html>

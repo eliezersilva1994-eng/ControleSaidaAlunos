@@ -1,6 +1,7 @@
 package app;
 
 import config.ConexaoBanco;
+import model.Responsavel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,7 @@ import service.ResponsavelService;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/responsaveis")
@@ -23,6 +25,28 @@ public class ResponsavelController {
 
         } catch (RegraNegocioException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));
+
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Lista os responsáveis autorizados a retirar um aluno específico.
+     * Usado pelo totem: depois de escolher o aluno, mostra essa lista para
+     * o responsável tocar no próprio nome.
+     */
+    @GetMapping
+    public ResponseEntity<?> listarPorAluno(@RequestParam int alunoId) {
+        try (Connection conexao = ConexaoBanco.conectar()) {
+            ResponsavelService responsavelService = new ResponsavelService(conexao);
+            List<Responsavel> responsaveis = responsavelService.listarPorAluno(alunoId);
+
+            List<ResponsavelResponse> resposta = responsaveis.stream()
+                    .map(r -> new ResponsavelResponse(r.getId(), r.getNome(), r.getDocumento()))
+                    .toList();
+            return ResponseEntity.ok(resposta);
 
         } catch (SQLException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

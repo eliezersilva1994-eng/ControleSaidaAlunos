@@ -21,8 +21,9 @@ public class RegistroSaidaService {
     /**
      * Chama um aluno pelo totem. Regras aplicadas, nessa ordem:
      * 1) o responsável precisa estar autorizado a retirar o aluno;
-     * 2) o aluno não pode já estar "chamado" (aguardando liberação);
-     * 3) o aluno não pode já ter sido "liberado" hoje.
+     * 2) o aluno não pode já ter sido chamado hoje (não há como o sistema
+     *    validar se ele "já foi entregue" — uma vez chamado, o professor
+     *    manda o aluno para a porta e o fluxo daquele aluno termina ali).
      */
     public int chamarAluno(int alunoId, int responsavelId) throws SQLException, RegraNegocioException {
         if (!responsavelDAO.estaAutorizado(alunoId, responsavelId)) {
@@ -31,30 +32,10 @@ public class RegistroSaidaService {
 
         RegistroSaida ultimo = registroSaidaDAO.buscarUltimoDeHoje(alunoId);
         if (ultimo != null) {
-            if (RegistroSaida.STATUS_LIBERADO.equals(ultimo.getStatus())) {
-                throw new RegraNegocioException("Aluno já foi liberado hoje.");
-            }
-            if (RegistroSaida.STATUS_CHAMADO.equals(ultimo.getStatus())) {
-                throw new RegraNegocioException("Aluno já foi chamado e aguarda liberação do professor.");
-            }
+            throw new RegraNegocioException("Aluno já foi chamado hoje.");
         }
 
         return registroSaidaDAO.inserirChamada(alunoId, responsavelId);
-    }
-
-    /**
-     * Professor libera o aluno. Só permite liberar um registro que exista e
-     * ainda não tenha sido liberado.
-     */
-    public void liberarAluno(int registroSaidaId) throws SQLException, RegraNegocioException {
-        RegistroSaida registro = registroSaidaDAO.buscarPorId(registroSaidaId);
-        if (registro == null) {
-            throw new RegraNegocioException("Registro de saída não encontrado.");
-        }
-        if (RegistroSaida.STATUS_LIBERADO.equals(registro.getStatus())) {
-            throw new RegraNegocioException("Este aluno já está liberado.");
-        }
-        registroSaidaDAO.liberarAluno(registroSaidaId);
     }
 
     /**

@@ -44,54 +44,35 @@ public class Main {
 
             imprimirPainel(registroSaidaService, turmaId);
 
-            // 4. Regra nova: tentar chamar a mesma aluna de novo antes da liberação
+            // 4. Regra nova: tentar chamar a mesma aluna de novo no mesmo dia
             try {
                 registroSaidaService.chamarAluno(alunoYasminId, responsavelId);
             } catch (RegraNegocioException e) {
                 System.out.println("\nBloqueio esperado (chamada duplicada): " + e.getMessage());
             }
 
-            // 5. Professor libera o aluno
-            registroSaidaService.liberarAluno(registroId);
-            System.out.println("\nProfessor liberou a Yasmin.");
-            imprimirPainel(registroSaidaService, turmaId);
-
-            // 6. Regra nova: tentar liberar de novo o mesmo registro
-            try {
-                registroSaidaService.liberarAluno(registroId);
-            } catch (RegraNegocioException e) {
-                System.out.println("\nBloqueio esperado (liberação duplicada): " + e.getMessage());
-            }
-
-            // 7. Regra nova: tentar chamar a aluna de novo, já liberada hoje
-            try {
-                registroSaidaService.chamarAluno(alunoYasminId, responsavelId);
-            } catch (RegraNegocioException e) {
-                System.out.println("\nBloqueio esperado (já liberada hoje): " + e.getMessage());
-            }
-
-            // 8. Retirada NÃO autorizada (Pedro não tem esse responsável vinculado)
+            // 5. Retirada NÃO autorizada (Pedro não tem esse responsável vinculado)
             try {
                 registroSaidaService.chamarAluno(alunoPedroId, responsavelId);
             } catch (RegraNegocioException e) {
                 System.out.println("\nBloqueio esperado (não autorizado): " + e.getMessage());
             }
 
-            // 9. Autenticação: cadastro de uma professora e login
+            // 6. Autenticação: cadastro de uma professora e login
             autenticacaoService.cadastrar("Carla Souza", "carla@escola.com", "senha123", Usuario.PERFIL_PROFESSOR, null);
             System.out.println("\nProfessora cadastrada.");
 
             Usuario logada = autenticacaoService.autenticar("carla@escola.com", "senha123");
             System.out.println("Login OK: " + logada);
 
-            // 10. Regra nova: senha errada deve ser bloqueada com mensagem genérica
+            // 7. Regra nova: senha errada deve ser bloqueada com mensagem genérica
             try {
                 autenticacaoService.autenticar("carla@escola.com", "senhaErrada");
             } catch (RegraNegocioException e) {
                 System.out.println("\nBloqueio esperado (senha errada): " + e.getMessage());
             }
 
-            // 11. Regra nova: e-mail duplicado no cadastro
+            // 8. Regra nova: e-mail duplicado no cadastro
             try {
                 autenticacaoService.cadastrar("Outra Carla", "carla@escola.com", "outraSenha", Usuario.PERFIL_PROFESSOR, null);
             } catch (RegraNegocioException e) {

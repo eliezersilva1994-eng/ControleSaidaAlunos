@@ -59,19 +59,6 @@ public class RegistroSaidaDAO {
         return null;
     }
 
-    public RegistroSaida buscarPorId(int id) throws SQLException {
-        String sql = "SELECT id, aluno_id, responsavel_id, horario, status FROM registro_saida WHERE id = ?";
-        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapear(rs);
-                }
-            }
-        }
-        return null;
-    }
-
     private RegistroSaida mapear(ResultSet rs) throws SQLException {
         return new RegistroSaida(
                 rs.getInt("id"),
@@ -80,18 +67,6 @@ public class RegistroSaidaDAO {
                 rs.getTimestamp("horario"),
                 rs.getString("status")
         );
-    }
-
-    /**
-     * O professor libera o aluno depois de ver o quadrado mudar de cor.
-     */
-    public void liberarAluno(int registroSaidaId) throws SQLException {
-        String sql = "UPDATE registro_saida SET status = ? WHERE id = ?";
-        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
-            stmt.setString(1, RegistroSaida.STATUS_LIBERADO);
-            stmt.setInt(2, registroSaidaId);
-            stmt.executeUpdate();
-        }
     }
 
     /**
