@@ -64,6 +64,25 @@ public class ResponsavelDAO {
     }
 
     /**
+     * Lista todos os responsáveis cadastrados (usado pela tela de
+     * administração, para escolher quem vincular a um aluno).
+     */
+    public List<Responsavel> listarTodos() throws SQLException {
+        String sql = "SELECT id, nome, foto_url FROM responsavel ORDER BY nome";
+        List<Responsavel> responsaveis = new ArrayList<>();
+
+        try (Statement stmt = conexao.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                responsaveis.add(new Responsavel(
+                        rs.getInt("id"), rs.getString("nome"), rs.getString("foto_url")));
+            }
+        }
+        return responsaveis;
+    }
+
+    /**
      * Lista todos os responsáveis autorizados a retirar um aluno específico.
      * Útil para a tela de totem: o responsável se identifica e o sistema
      * confirma se ele está na lista antes de liberar a seleção.

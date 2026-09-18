@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração — Controle de Saída de Alunos</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f2f4f7;
+            margin: 0;
+            padding: 24px;
+            color: #1a1a2e;
+        }
+        .topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1000px;
+            margin: 0 auto 24px;
+        }
+        .topo h1 { font-size: 22px; margin: 0; }
+        .topo a { color: #6b7280; font-size: 14px; }
+        .grade-secoes {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 20px;
+        }
+        .secao {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .secao h2 { font-size: 16px; margin: 0 0 14px; }
+        .linha-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        input, select {
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 120px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        button:hover { background: #4338ca; }
+        ul { list-style: none; padding: 0; margin: 10px 0 0; max-height: 160px; overflow-y: auto; }
+        li {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+        li .id-tag { color: #9ca3af; font-size: 12px; }
+        .mensagem {
+            font-size: 13px;
+            margin-top: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            display: none;
+        }
+        .mensagem.sucesso { background: #f0fdf4; color: #15803d; display: block; }
+        .mensagem.erro { background: #fef2f2; color: #b91c1c; display: block; }
+    </style>
+</head>
+<body>
+<div class="topo">
+    <h1>Administração</h1>
+    <a href="index.html">Sair</a>
+</div>
+
+<div class="grade-secoes">
+
+    <!-- TURMAS -->
+    <div class="secao">
+        <h2>Turmas</h2>
+        <div class="linha-form">
+            <input type="text" id="nomeTurma" placeholder="Nome da turma (ex: 1º Ano A)">
+            <button onclick="criarTurma()">Adicionar</button>
+        </div>
+        <div class="mensagem" id="mensagemTurma"></div>
+        <ul id="listaTurmas"></ul>
+    </div>
+
+    <!-- ALUNOS -->
+    <div class="secao">
+        <h2>Alunos</h2>
+        <div class="linha-form">
+            <select id="turmaParaAluno"></select>
+        </div>
+        <div class="linha-form">
+            <input type="text" id="nomeAluno" placeholder="Nome do aluno">
+            <button onclick="criarAluno()">Adicionar</button>
+        </div>
+        <div class="mensagem" id="mensagemAluno"></div>
+        <ul id="listaAlunos"></ul>
+    </div>
+
+    <!-- RESPONSÁVEIS -->
+    <div class="secao">
+        <h2>Responsáveis</h2>
+        <div class="linha-form">
+            <input type="text" id="nomeResponsavel" placeholder="Nome do responsável">
+            <button onclick="criarResponsavel()">Adicionar</button>
+        </div>
+        <div class="mensagem" id="mensagemResponsavel"></div>
+        <ul id="listaResponsaveis"></ul>
+    </div>
+
+    <!-- VINCULAR -->
+    <div class="secao">
+        <h2>Autorizar retirada</h2>
+        <p style="font-size:13px; color:#6b7280; margin-top:0;">
+            Escolha o aluno e o responsável autorizado a retirá-lo.
+        </p>
+        <div class="linha-form">
+            <select id="turmaParaVinculo"></select>
+        </div>
+        <div class="linha-form">
+            <select id="alunoParaVinculo"></select>
+        </div>
+        <div class="linha-form">
+            <select id="responsavelParaVinculo"></select>
+            <button onclick="vincular()">Autorizar</button>
+        </div>
+        <div class="mensagem" id="mensagemVinculo"></div>
+    </div>
+
+    <!-- LOGINS DE SALA -->
+    <div class="secao">
+        <h2>Login da sala (TV)</h2>
+        <p style="font-size:13px; color:#6b7280; margin-top:0;">
+            Cria um login fixo para a TV de uma turma — ao logar, vai
+            direto para o painel daquela sala.
+        </p>
+        <div class="linha-form">
+            <select id="turmaParaLogin"></select>
+        </div>
+        <div class="linha-form">
+            <input type="email" id="emailLogin" placeholder="E-mail (ex: sala-1a@escola.com)">
+        </div>
+        <div class="linha-form">
+            <input type="password" id="senhaLogin" placeholder="Senha (mín. 6 caracteres)">
+            <button onclick="criarLoginSala()">Criar login</button>
+        </div>
+        <div class="mensagem" id="mensagemLogin"></div>
+    </div>
+
+</div>
+
+<script>
+    let turmas = [];
+    let responsaveis = [];
+
+    async function carregarTurmas() {
+        const resposta = await fetch('/api/turmas');
+        turmas = await resposta.json();
+
+        const lista = document.getElementById('listaTurmas');
+        lista.innerHTML = turmas.map(t =>
+            `<li>${t.nome} <span class="id-tag">#${t.id}</span></li>`).join('');
+
+        const selects = ['turmaParaAluno', 'turmaParaVinculo', 'turmaParaLogin'];
+        for (const idSelect of selects) {
+            const select = document.getElementById(idSelect);
+            const selecionado = select.value;
+            select.innerHTML = turmas.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
+            if (selecionado) select.value = selecionado;
+        }
+
+        if (turmas.length > 0) {
+            await carregarAlunosDaTurma(document.getElementById('turmaParaVinculo').value);
+        }
+    }
+
+    async function criarTurma() {
+        const nome = document.getElementById('nomeTurma').value.trim();
+        if (!nome) return;
+
+        const resposta = await fetch('/api/turmas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome })
+        });
+        const dados = await resposta.json();
+        mostrarMensagem('mensagemTurma', resposta.ok, resposta.ok ? 'Turma criada.' : dados.erro);
+
+        if (resposta.ok) {
+            document.getElementById('nomeTurma').value = '';
+            await carregarTurmas();
+        }
+    }
+
+    async function carregarAlunosDaTurma(turmaId) {
+        if (!turmaId) return;
+        const resposta = await fetch(`/api/alunos?turmaId=${turmaId}`);
+        const alunos = await resposta.json();
+
+        document.getElementById('listaAlunos').innerHTML = alunos.map(a =>
+            `<li>${a.nome} <span class="id-tag">#${a.id}</span></li>`).join('');
+
+        const selectAluno = document.getElementById('alunoParaVinculo');
+        selectAluno.innerHTML = alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+    }
+
+    document.getElementById('turmaParaAluno').addEventListener('change', (e) => {
+        carregarAlunosDaTurma(e.target.value);
+    });
+    document.getElementById('turmaParaVinculo').addEventListener('change', (e) => {
+        carregarAlunosDaTurma(e.target.value);
+    });
+
+    async function criarAluno() {
+        const nome = document.getElementById('nomeAluno').value.trim();
+        const turmaId = document.getElementById('turmaParaAluno').value;
+        if (!nome || !turmaId) return;
+
+        const resposta = await fetch('/api/alunos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, turmaId: Number(turmaId) })
+        });
+        const dados = await resposta.json();
+        mostrarMensagem('mensagemAluno', resposta.ok, resposta.ok ? 'Aluno adicionado.' : dados.erro);
+
+        if (resposta.ok) {
+            document.getElementById('nomeAluno').value = '';
+            await carregarAlunosDaTurma(turmaId);
+        }
+    }
+
+    async function carregarResponsaveis() {
+        const resposta = await fetch('/api/responsaveis');
+        responsaveis = await resposta.json();
+
+        document.getElementById('listaResponsaveis').innerHTML = responsaveis.map(r =>
+            `<li>${r.nome} <span class="id-tag">#${r.id}</span></li>`).join('');
+
+        document.getElementById('responsavelParaVinculo').innerHTML =
+            responsaveis.map(r => `<option value="${r.id}">${r.nome}</option>`).join('');
+    }
+
+    async function criarResponsavel() {
+        const nome = document.getElementById('nomeResponsavel').value.trim();
+        if (!nome) return;
+
+        const resposta = await fetch('/api/responsaveis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, fotoUrl: null })
+        });
+        const dados = await resposta.json();
+        mostrarMensagem('mensagemResponsavel', resposta.ok, resposta.ok ? 'Responsável adicionado.' : dados.erro);
+
+        if (resposta.ok) {
+            document.getElementById('nomeResponsavel').value = '';
+            await carregarResponsaveis();
+        }
+    }
+
+    async function vincular() {
+        const alunoId = document.getElementById('alunoParaVinculo').value;
+        const responsavelId = document.getElementById('responsavelParaVinculo').value;
+        if (!alunoId || !responsavelId) return;
+
+        const resposta = await fetch('/api/responsaveis/vincular', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alunoId: Number(alunoId), responsavelId: Number(responsavelId) })
+        });
+        const dados = await resposta.json();
+        mostrarMensagem('mensagemVinculo', resposta.ok,
+            resposta.ok ? 'Responsável autorizado com sucesso.' : dados.erro);
+    }
+
+    async function criarLoginSala() {
+        const turmaId = document.getElementById('turmaParaLogin').value;
+        const email = document.getElementById('emailLogin').value.trim();
+        const senha = document.getElementById('senhaLogin').value;
+        if (!turmaId || !email || !senha) return;
+
+        const turmaNome = turmas.find(t => t.id == turmaId)?.nome || '';
+
+        const resposta = await fetch('/api/cadastrar-usuario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nome: `Sala ${turmaNome}`,
+                email,
+                senha,
+                perfil: 'professor',
+                turmaId: Number(turmaId)
+            })
+        });
+        const dados = await resposta.json();
+        mostrarMensagem('mensagemLogin', resposta.ok,
+            resposta.ok ? 'Login criado com sucesso.' : dados.erro);
+
+        if (resposta.ok) {
+            document.getElementById('emailLogin').value = '';
+            document.getElementById('senhaLogin').value = '';
+        }
+    }
+
+    function mostrarMensagem(idElemento, sucesso, texto) {
+        const el = document.getElementById(idElemento);
+        el.className = 'mensagem ' + (sucesso ? 'sucesso' : 'erro');
+        el.textContent = texto;
+        setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    carregarTurmas();
+    carregarResponsaveis();
+</script>
+</body>
+</html>

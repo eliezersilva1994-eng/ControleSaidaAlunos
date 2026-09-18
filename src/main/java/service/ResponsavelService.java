@@ -32,6 +32,10 @@ public class ResponsavelService {
         responsavelDAO.vincularAluno(alunoId, responsavelId);
     }
 
+    public List<Responsavel> listarTodos() throws SQLException {
+        return responsavelDAO.listarTodos();
+    }
+
     public List<Responsavel> listarPorAluno(int alunoId) throws SQLException {
         return responsavelDAO.listarPorAluno(alunoId);
     }

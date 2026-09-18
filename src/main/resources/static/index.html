@@ -132,9 +132,9 @@
                 // Login de sala: vai direto para o painel daquela turma.
                 window.location.href = `painel.html?turmaId=${dados.turmaId}`;
             } else {
-                // Conta sem sala fixa (ex: admin) — ainda não temos uma
-                // tela de administração; por ora só confirma o login.
-                window.location.href = 'entrada.html';
+                // Conta sem sala fixa (ex: admin/secretaria) vai para o
+                // painel de administração.
+                window.location.href = 'admin.html';
             }
 
         } catch (erro) {

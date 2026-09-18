@@ -33,15 +33,17 @@ public class ResponsavelController {
     }
 
     /**
-     * Lista os responsáveis autorizados a retirar um aluno específico.
-     * Usado pelo totem: depois de escolher o aluno, mostra essa lista para
-     * o responsável tocar no próprio nome.
+     * Sem alunoId: lista todos os responsáveis cadastrados (usado na tela
+     * de administração). Com alunoId: lista só os autorizados para aquele
+     * aluno específico (usado no totem).
      */
     @GetMapping
-    public ResponseEntity<?> listarPorAluno(@RequestParam int alunoId) {
+    public ResponseEntity<?> listar(@RequestParam(required = false) Integer alunoId) {
         try (Connection conexao = ConexaoBanco.conectar()) {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
-            List<Responsavel> responsaveis = responsavelService.listarPorAluno(alunoId);
+            List<Responsavel> responsaveis = (alunoId == null)
+                    ? responsavelService.listarTodos()
+                    : responsavelService.listarPorAluno(alunoId);
 
             List<ResponsavelResponse> resposta = responsaveis.stream()
                     .map(r -> new ResponsavelResponse(r.getId(), r.getNome()))
