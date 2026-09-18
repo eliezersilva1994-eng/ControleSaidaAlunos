@@ -74,4 +74,29 @@ public class UsuarioDAO {
     public boolean existePorEmail(String email) throws SQLException {
         return buscarPorEmail(email) != null;
     }
+
+    /**
+     * Lista todos os usuários cadastrados, para a tela de administração.
+     * Não busca senha_hash — a lista nunca precisa desse dado.
+     */
+    public java.util.List<Usuario> listarTodos() throws SQLException {
+        String sql = "SELECT id, nome, email, perfil, turma_id FROM usuario ORDER BY nome";
+        java.util.List<Usuario> usuarios = new java.util.ArrayList<>();
+
+        try (Statement stmt = conexao.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                usuarios.add(new Usuario(
+                        rs.getInt("id"),
+                        rs.getString("nome"),
+                        rs.getString("email"),
+                        null,
+                        rs.getString("perfil"),
+                        rs.getObject("turma_id", Integer.class)
+                ));
+            }
+        }
+        return usuarios;
+    }
 }

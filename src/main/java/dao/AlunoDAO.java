@@ -63,4 +63,42 @@ public class AlunoDAO {
         }
         return alunos;
     }
+
+    /**
+     * Busca alunos cujo nome contém o texto informado (sem diferenciar
+     * maiúsculas/minúsculas), em qualquer turma. Usado na busca da tela de
+     * administração.
+     */
+    public List<Aluno> buscarPorNome(String nome) throws SQLException {
+        String sql = "SELECT id, nome, turma_id FROM aluno WHERE nome ILIKE ? ORDER BY nome";
+        List<Aluno> alunos = new ArrayList<>();
+
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, "%" + nome + "%");
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    alunos.add(new Aluno(rs.getInt("id"), rs.getString("nome"), rs.getInt("turma_id")));
+                }
+            }
+        }
+        return alunos;
+    }
+
+    public void atualizar(int id, String nome) throws SQLException {
+        String sql = "UPDATE aluno SET nome = ? WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, nome);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+        }
+    }
+
+    public void excluir(int id) throws SQLException {
+        String sql = "DELETE FROM aluno WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
+    }
 }

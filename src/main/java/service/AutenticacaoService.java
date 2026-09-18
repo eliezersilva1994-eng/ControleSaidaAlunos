@@ -67,4 +67,8 @@ public class AutenticacaoService {
 
         return usuario;
     }
+
+    public java.util.List<Usuario> listarTodos() throws SQLException {
+        return usuarioDAO.listarTodos();
+    }
 }

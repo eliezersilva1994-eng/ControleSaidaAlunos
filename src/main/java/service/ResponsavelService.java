@@ -32,11 +32,34 @@ public class ResponsavelService {
         responsavelDAO.vincularAluno(alunoId, responsavelId);
     }
 
+    public void desvincularAluno(int alunoId, int responsavelId) throws SQLException {
+        responsavelDAO.desvincular(alunoId, responsavelId);
+    }
+
     public List<Responsavel> listarTodos() throws SQLException {
         return responsavelDAO.listarTodos();
     }
 
     public List<Responsavel> listarPorAluno(int alunoId) throws SQLException {
         return responsavelDAO.listarPorAluno(alunoId);
+    }
+
+    public void atualizar(int id, String nome, String fotoUrl) throws SQLException, RegraNegocioException {
+        if (nome == null || nome.isBlank()) {
+            throw new RegraNegocioException("Nome do responsável é obrigatório.");
+        }
+        responsavelDAO.atualizar(id, nome.trim(), fotoUrl);
+    }
+
+    public void excluir(int id) throws SQLException, RegraNegocioException {
+        try {
+            responsavelDAO.excluir(id);
+        } catch (SQLException e) {
+            if ("23503".equals(e.getSQLState())) {
+                throw new RegraNegocioException(
+                        "Não é possível excluir: este responsável ainda está vinculado a alunos ou possui registros de saída.");
+            }
+            throw e;
+        }
     }
 }

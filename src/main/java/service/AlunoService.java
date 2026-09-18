@@ -25,4 +25,30 @@ public class AlunoService {
     public List<Aluno> listarPorTurma(int turmaId) throws SQLException {
         return alunoDAO.listarPorTurma(turmaId);
     }
+
+    public List<Aluno> buscarPorNome(String nome) throws SQLException, RegraNegocioException {
+        if (nome == null || nome.isBlank()) {
+            throw new RegraNegocioException("Informe um nome para buscar.");
+        }
+        return alunoDAO.buscarPorNome(nome.trim());
+    }
+
+    public void atualizar(int id, String nome) throws SQLException, RegraNegocioException {
+        if (nome == null || nome.isBlank()) {
+            throw new RegraNegocioException("Nome do aluno é obrigatório.");
+        }
+        alunoDAO.atualizar(id, nome.trim());
+    }
+
+    public void excluir(int id) throws SQLException, RegraNegocioException {
+        try {
+            alunoDAO.excluir(id);
+        } catch (SQLException e) {
+            if ("23503".equals(e.getSQLState())) {
+                throw new RegraNegocioException(
+                        "Não é possível excluir: este aluno possui responsáveis vinculados ou registros de saída.");
+            }
+            throw e;
+        }
+    }
 }

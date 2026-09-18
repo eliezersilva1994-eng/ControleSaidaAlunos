@@ -35,7 +35,7 @@ public class ResponsavelController {
     /**
      * Sem alunoId: lista todos os responsáveis cadastrados (usado na tela
      * de administração). Com alunoId: lista só os autorizados para aquele
-     * aluno específico (usado no totem).
+     * aluno específico (usado no totem e na gestão de vínculos).
      */
     @GetMapping
     public ResponseEntity<?> listar(@RequestParam(required = false) Integer alunoId) {
@@ -65,6 +65,54 @@ public class ResponsavelController {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
             responsavelService.vincularAluno(requisicao.alunoId(), requisicao.responsavelId());
             return ResponseEntity.ok(new MensagemResponse("Responsável vinculado com sucesso."));
+
+        } catch (RegraNegocioException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));
+
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Remove a autorização de um responsável para retirar um aluno.
+     */
+    @DeleteMapping("/vincular")
+    public ResponseEntity<?> desvincular(@RequestParam int alunoId, @RequestParam int responsavelId) {
+        try (Connection conexao = ConexaoBanco.conectar()) {
+            ResponsavelService responsavelService = new ResponsavelService(conexao);
+            responsavelService.desvincularAluno(alunoId, responsavelId);
+            return ResponseEntity.ok(new MensagemResponse("Vínculo removido com sucesso."));
+
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizar(@PathVariable int id, @RequestBody ResponsavelRequest requisicao) {
+        try (Connection conexao = ConexaoBanco.conectar()) {
+            ResponsavelService responsavelService = new ResponsavelService(conexao);
+            responsavelService.atualizar(id, requisicao.nome(), requisicao.fotoUrl());
+            return ResponseEntity.ok(new MensagemResponse("Responsável atualizado com sucesso."));
+
+        } catch (RegraNegocioException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));
+
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> excluir(@PathVariable int id) {
+        try (Connection conexao = ConexaoBanco.conectar()) {
+            ResponsavelService responsavelService = new ResponsavelService(conexao);
+            responsavelService.excluir(id);
+            return ResponseEntity.ok(new MensagemResponse("Responsável excluído com sucesso."));
 
         } catch (RegraNegocioException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));

@@ -47,9 +47,6 @@ public class TurmaDAO {
         return turmas;
     }
 
-    /**
-     * Verifica se já existe uma turma com esse nome (comparação exata).
-     */
     public boolean existePorNome(String nome) throws SQLException {
         String sql = "SELECT 1 FROM turma WHERE nome = ?";
         try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
@@ -57,6 +54,37 @@ public class TurmaDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next();
             }
+        }
+    }
+
+    /**
+     * Verifica duplicidade de nome, ignorando a própria turma (usado ao editar).
+     */
+    public boolean existePorNomeExcetoId(String nome, int idExcluir) throws SQLException {
+        String sql = "SELECT 1 FROM turma WHERE nome = ? AND id <> ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, nome);
+            stmt.setInt(2, idExcluir);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    public void atualizar(int id, String nome) throws SQLException {
+        String sql = "UPDATE turma SET nome = ? WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, nome);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+        }
+    }
+
+    public void excluir(int id) throws SQLException {
+        String sql = "DELETE FROM turma WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
         }
     }
 }

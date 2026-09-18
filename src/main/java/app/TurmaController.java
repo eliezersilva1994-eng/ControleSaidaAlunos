@@ -48,4 +48,36 @@ public class TurmaController {
                     .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizar(@PathVariable int id, @RequestBody NomeRequest requisicao) {
+        try (Connection conexao = ConexaoBanco.conectar()) {
+            TurmaService turmaService = new TurmaService(conexao);
+            turmaService.atualizar(id, requisicao.nome());
+            return ResponseEntity.ok(new MensagemResponse("Turma atualizada com sucesso."));
+
+        } catch (RegraNegocioException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));
+
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> excluir(@PathVariable int id) {
+        try (Connection conexao = ConexaoBanco.conectar()) {
+            TurmaService turmaService = new TurmaService(conexao);
+            turmaService.excluir(id);
+            return ResponseEntity.ok(new MensagemResponse("Turma excluída com sucesso."));
+
+        } catch (RegraNegocioException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));
+
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
+        }
+    }
 }

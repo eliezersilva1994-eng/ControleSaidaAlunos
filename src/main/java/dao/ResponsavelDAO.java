@@ -34,10 +34,6 @@ public class ResponsavelDAO {
         throw new SQLException("Falha ao inserir responsável, nenhum ID gerado.");
     }
 
-    /**
-     * Vincula um responsável a um aluno, autorizando-o a retirá-lo.
-     * Um aluno pode ter vários responsáveis autorizados.
-     */
     public void vincularAluno(int alunoId, int responsavelId) throws SQLException {
         String sql = "INSERT INTO aluno_responsavel (aluno_id, responsavel_id) VALUES (?, ?)";
         try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
@@ -48,9 +44,17 @@ public class ResponsavelDAO {
     }
 
     /**
-     * Verifica se um responsável está autorizado a retirar um determinado aluno.
-     * Essa é a validação central de segurança do sistema.
+     * Remove a autorização de um responsável para retirar um aluno.
      */
+    public void desvincular(int alunoId, int responsavelId) throws SQLException {
+        String sql = "DELETE FROM aluno_responsavel WHERE aluno_id = ? AND responsavel_id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, alunoId);
+            stmt.setInt(2, responsavelId);
+            stmt.executeUpdate();
+        }
+    }
+
     public boolean estaAutorizado(int alunoId, int responsavelId) throws SQLException {
         String sql = "SELECT 1 FROM aluno_responsavel WHERE aluno_id = ? AND responsavel_id = ?";
         try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
@@ -63,10 +67,6 @@ public class ResponsavelDAO {
         }
     }
 
-    /**
-     * Lista todos os responsáveis cadastrados (usado pela tela de
-     * administração, para escolher quem vincular a um aluno).
-     */
     public List<Responsavel> listarTodos() throws SQLException {
         String sql = "SELECT id, nome, foto_url FROM responsavel ORDER BY nome";
         List<Responsavel> responsaveis = new ArrayList<>();
@@ -82,11 +82,6 @@ public class ResponsavelDAO {
         return responsaveis;
     }
 
-    /**
-     * Lista todos os responsáveis autorizados a retirar um aluno específico.
-     * Útil para a tela de totem: o responsável se identifica e o sistema
-     * confirma se ele está na lista antes de liberar a seleção.
-     */
     public List<Responsavel> listarPorAluno(int alunoId) throws SQLException {
         String sql = "SELECT r.id, r.nome, r.foto_url " +
                 "FROM responsavel r " +
@@ -109,5 +104,23 @@ public class ResponsavelDAO {
             }
         }
         return responsaveis;
+    }
+
+    public void atualizar(int id, String nome, String fotoUrl) throws SQLException {
+        String sql = "UPDATE responsavel SET nome = ?, foto_url = ? WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, nome);
+            stmt.setString(2, fotoUrl);
+            stmt.setInt(3, id);
+            stmt.executeUpdate();
+        }
+    }
+
+    public void excluir(int id) throws SQLException {
+        String sql = "DELETE FROM responsavel WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
     }
 }

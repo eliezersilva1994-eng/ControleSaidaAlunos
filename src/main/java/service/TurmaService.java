@@ -31,4 +31,29 @@ public class TurmaService {
     public List<Turma> listarTodas() throws SQLException {
         return turmaDAO.listarTodas();
     }
+
+    public void atualizar(int id, String nome) throws SQLException, RegraNegocioException {
+        if (nome == null || nome.isBlank()) {
+            throw new RegraNegocioException("Nome da turma é obrigatório.");
+        }
+
+        String nomeLimpo = nome.trim();
+        if (turmaDAO.existePorNomeExcetoId(nomeLimpo, id)) {
+            throw new RegraNegocioException("Já existe outra turma com esse nome.");
+        }
+
+        turmaDAO.atualizar(id, nomeLimpo);
+    }
+
+    public void excluir(int id) throws SQLException, RegraNegocioException {
+        try {
+            turmaDAO.excluir(id);
+        } catch (SQLException e) {
+            if ("23503".equals(e.getSQLState())) {
+                throw new RegraNegocioException(
+                        "Não é possível excluir: existem alunos cadastrados nesta turma.");
+            }
+            throw e;
+        }
+    }
 }

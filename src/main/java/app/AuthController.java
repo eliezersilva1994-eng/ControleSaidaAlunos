@@ -4,15 +4,13 @@ import config.ConexaoBanco;
 import model.Usuario;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import service.AutenticacaoService;
 import service.RegraNegocioException;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Expõe a autenticação (login) como um endpoint HTTP.
@@ -25,6 +23,27 @@ import java.sql.SQLException;
 @RestController
 @RequestMapping("/api")
 public class AuthController {
+
+    /**
+     * Lista todos os usuários cadastrados, para a tela de administração
+     * (nunca inclui senha ou hash).
+     */
+    @GetMapping("/usuarios")
+    public ResponseEntity<?> listar() {
+        try (Connection conexao = ConexaoBanco.conectar()) {
+            AutenticacaoService autenticacaoService = new AutenticacaoService(conexao);
+            List<Usuario> usuarios = autenticacaoService.listarTodos();
+
+            List<LoginResponse> resposta = usuarios.stream()
+                    .map(u -> new LoginResponse(u.getId(), u.getNome(), u.getEmail(), u.getPerfil(), u.getTurmaId()))
+                    .toList();
+            return ResponseEntity.ok(resposta);
+
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErroResponse("Erro de banco de dados: " + e.getMessage()));
+        }
+    }
 
     @PostMapping("/cadastrar-usuario")
     public ResponseEntity<?> cadastrar(@RequestBody CadastroUsuarioRequest requisicao) {
