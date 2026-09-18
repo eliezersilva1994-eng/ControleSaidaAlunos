@@ -20,8 +20,8 @@ public class ResponsavelController {
     public ResponseEntity<?> criar(@RequestBody ResponsavelRequest requisicao) {
         try (Connection conexao = ConexaoBanco.conectar()) {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
-            int id = responsavelService.inserir(requisicao.nome(), requisicao.documento(), requisicao.fotoUrl());
-            return ResponseEntity.ok(new ResponsavelResponse(id, requisicao.nome(), requisicao.documento()));
+            int id = responsavelService.inserir(requisicao.nome(), requisicao.fotoUrl());
+            return ResponseEntity.ok(new ResponsavelResponse(id, requisicao.nome()));
 
         } catch (RegraNegocioException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroResponse(e.getMessage()));
@@ -44,7 +44,7 @@ public class ResponsavelController {
             List<Responsavel> responsaveis = responsavelService.listarPorAluno(alunoId);
 
             List<ResponsavelResponse> resposta = responsaveis.stream()
-                    .map(r -> new ResponsavelResponse(r.getId(), r.getNome(), r.getDocumento()))
+                    .map(r -> new ResponsavelResponse(r.getId(), r.getNome()))
                     .toList();
             return ResponseEntity.ok(resposta);
 

@@ -18,12 +18,11 @@ public class ResponsavelDAO {
         this.conexao = conexao;
     }
 
-    public int inserir(String nome, String documento, String fotoUrl) throws SQLException {
-        String sql = "INSERT INTO responsavel (nome, documento, foto_url) VALUES (?, ?, ?)";
+    public int inserir(String nome, String fotoUrl) throws SQLException {
+        String sql = "INSERT INTO responsavel (nome, foto_url) VALUES (?, ?)";
         try (PreparedStatement stmt = conexao.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, nome);
-            stmt.setString(2, documento);
-            stmt.setString(3, fotoUrl);
+            stmt.setString(2, fotoUrl);
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -70,7 +69,7 @@ public class ResponsavelDAO {
      * confirma se ele está na lista antes de liberar a seleção.
      */
     public List<Responsavel> listarPorAluno(int alunoId) throws SQLException {
-        String sql = "SELECT r.id, r.nome, r.documento, r.foto_url " +
+        String sql = "SELECT r.id, r.nome, r.foto_url " +
                 "FROM responsavel r " +
                 "JOIN aluno_responsavel ar ON ar.responsavel_id = r.id " +
                 "WHERE ar.aluno_id = ? " +
@@ -85,7 +84,6 @@ public class ResponsavelDAO {
                     responsaveis.add(new Responsavel(
                             rs.getInt("id"),
                             rs.getString("nome"),
-                            rs.getString("documento"),
                             rs.getString("foto_url")
                     ));
                 }

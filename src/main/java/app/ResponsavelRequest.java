@@ -1,4 +1,4 @@
 package app;
 
-public record ResponsavelRequest(String nome, String documento, String fotoUrl) {
+public record ResponsavelRequest(String nome, String fotoUrl) {
 }

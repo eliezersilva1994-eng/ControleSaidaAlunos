@@ -15,11 +15,11 @@ public class ResponsavelService {
         this.responsavelDAO = new ResponsavelDAO(conexao);
     }
 
-    public int inserir(String nome, String documento, String fotoUrl) throws SQLException, RegraNegocioException {
+    public int inserir(String nome, String fotoUrl) throws SQLException, RegraNegocioException {
         if (nome == null || nome.isBlank()) {
             throw new RegraNegocioException("Nome do responsável é obrigatório.");
         }
-        return responsavelDAO.inserir(nome.trim(), documento, fotoUrl);
+        return responsavelDAO.inserir(nome.trim(), fotoUrl);
     }
 
     /**

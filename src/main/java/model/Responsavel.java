@@ -4,22 +4,19 @@ public class Responsavel {
 
     private int id;
     private String nome;
-    private String documento;
     private String fotoUrl;
 
     public Responsavel() {
     }
 
-    public Responsavel(int id, String nome, String documento, String fotoUrl) {
+    public Responsavel(int id, String nome, String fotoUrl) {
         this.id = id;
         this.nome = nome;
-        this.documento = documento;
         this.fotoUrl = fotoUrl;
     }
 
-    public Responsavel(String nome, String documento, String fotoUrl) {
+    public Responsavel(String nome, String fotoUrl) {
         this.nome = nome;
-        this.documento = documento;
         this.fotoUrl = fotoUrl;
     }
 
@@ -39,14 +36,6 @@ public class Responsavel {
         this.nome = nome;
     }
 
-    public String getDocumento() {
-        return documento;
-    }
-
-    public void setDocumento(String documento) {
-        this.documento = documento;
-    }
-
     public String getFotoUrl() {
         return fotoUrl;
     }
@@ -57,6 +46,6 @@ public class Responsavel {
 
     @Override
     public String toString() {
-        return "Responsavel{id=" + id + ", nome='" + nome + "', documento='" + documento + "'}";
+        return "Responsavel{id=" + id + ", nome='" + nome + "'}";
     }
 }

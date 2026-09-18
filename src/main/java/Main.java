@@ -35,7 +35,7 @@ public class Main {
             int alunoPedroId = alunoService.inserir("Pedro Souza", turmaId);
 
             // 2. Cadastro de responsável e vínculo com a aluna que ele pode retirar
-            int responsavelId = responsavelService.inserir("Maria Ferreira", "123.456.789-00", null);
+            int responsavelId = responsavelService.inserir("Maria Ferreira", null);
             responsavelService.vincularAluno(alunoYasminId, responsavelId);
 
             // 3. Totem: responsável chega e seleciona a aluna Yasmin
