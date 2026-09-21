@@ -179,7 +179,7 @@
         <ul id="listaResponsaveis" class="oculta"></ul>
     </div>
 
-    <!-- LOGINS DE SALA (somente admin) -->
+    <!-- LOGINS (somente admin) -->
     <div class="secao somente-admin" id="secaoLogins">
         <div class="secao-topo">
             <h2>Logins cadastrados</h2>
@@ -268,11 +268,6 @@
         window.location.href = 'index.html';
     }
 
-    /**
-     * Se a sessão expirou ou o token é inválido, o servidor responde 401
-     * — nesse caso, manda a pessoa logar de novo em vez de mostrar um
-     * erro confuso na tela.
-     */
     async function tratarRespostaAuth(resposta) {
         if (resposta.status === 401) {
             alert('Sua sessão expirou. Faça login novamente.');
@@ -291,8 +286,24 @@
             `${usuarioLogado.nome} (${perfilAtual === 'admin' ? 'Diretora' : 'Secretaria'})`;
     }
 
+    // ---------- Segurança: nunca inserir texto de fora direto no HTML ----------
+
+    /**
+     * Converte texto em HTML seguro para exibição (escapa <, >, & etc.),
+     * evitando que um nome cadastrado com algo como "<script>" vire
+     * código executado na tela de outra pessoa (XSS).
+     */
+    function escaparHtml(texto) {
+        const div = document.createElement('div');
+        div.textContent = String(texto);
+        return div.innerHTML;
+    }
+
     let turmas = [];
     let responsaveis = [];
+    let alunosAtuais = [];
+    let resultadosBuscaAlunoAtual = [];
+    let responsaveisDoAlunoAtual = [];
     let alunoSelecionadoId = null;
     let responsavelSelecionadoParaVincularId = null;
 
@@ -311,9 +322,9 @@
 
         document.getElementById('listaTurmas').innerHTML = turmas.map(t => `
                 <li>
-                    <span class="nome-item">${t.nome} <span class="id-tag">#${t.id}</span></span>
+                    <span class="nome-item">${escaparHtml(t.nome)} <span class="id-tag">#${t.id}</span></span>
                     <span class="acoes">
-                        <button class="botao-mini editar" onclick="editarTurma(${t.id}, '${escaparAspas(t.nome)}')">Editar</button>
+                        <button class="botao-mini editar" onclick="editarTurma(${t.id})">Editar</button>
                         <button class="botao-mini excluir" onclick="excluirTurma(${t.id})">Excluir</button>
                     </span>
                 </li>`).join('');
@@ -322,7 +333,7 @@
         for (const idSelect of selects) {
             const select = document.getElementById(idSelect);
             const selecionado = select.value;
-            select.innerHTML = turmas.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
+            select.innerHTML = turmas.map(t => `<option value="${t.id}">${escaparHtml(t.nome)}</option>`).join('');
             if (selecionado) select.value = selecionado;
         }
     }
@@ -345,7 +356,9 @@
         }
     }
 
-    async function editarTurma(id, nomeAtual) {
+    async function editarTurma(id) {
+        const turmaAtual = turmas.find(t => t.id === id);
+        const nomeAtual = turmaAtual ? turmaAtual.nome : '';
         const novoNome = prompt('Novo nome da turma:', nomeAtual);
         if (!novoNome || novoNome.trim() === '' || novoNome === nomeAtual) return;
 
@@ -378,12 +391,13 @@
     }
 
     function renderizarListaAlunos(alunos) {
+        alunosAtuais = alunos;
         const podeGerenciar = perfilAtual === 'admin' || perfilAtual === 'secretaria';
         document.getElementById('listaAlunos').innerHTML = alunos.map(a => `
                 <li>
-                    <span class="nome-item">${a.nome} <span class="id-tag">#${a.id}</span></span>
+                    <span class="nome-item">${escaparHtml(a.nome)} <span class="id-tag">#${a.id}</span></span>
                     <span class="acoes">
-                        ${podeGerenciar ? `<button class="botao-mini editar" onclick="editarAluno(${a.id}, '${escaparAspas(a.nome)}')">Editar</button>` : ''}
+                        ${podeGerenciar ? `<button class="botao-mini editar" onclick="editarAluno(${a.id})">Editar</button>` : ''}
                         ${perfilAtual === 'admin' ? `<button class="botao-mini excluir" onclick="excluirAluno(${a.id})">Excluir</button>` : ''}
                     </span>
                 </li>`).join('');
@@ -413,7 +427,9 @@
         }
     }
 
-    async function editarAluno(id, nomeAtual) {
+    async function editarAluno(id) {
+        const alunoAtual = alunosAtuais.find(a => a.id === id);
+        const nomeAtual = alunoAtual ? alunoAtual.nome : '';
         const novoNome = prompt('Novo nome do aluno:', nomeAtual);
         if (!novoNome || novoNome.trim() === '' || novoNome === nomeAtual) return;
 
@@ -455,10 +471,10 @@
         const podeEditarExcluir = perfilAtual === 'admin';
         document.getElementById('listaResponsaveis').innerHTML = responsaveis.map(r => `
                 <li>
-                    <span class="nome-item">${r.nome} <span class="id-tag">#${r.id}</span></span>
+                    <span class="nome-item">${escaparHtml(r.nome)} <span class="id-tag">#${r.id}</span></span>
                     <span class="acoes">
                         ${podeEditarExcluir ? `
-                            <button class="botao-mini editar" onclick="editarResponsavel(${r.id}, '${escaparAspas(r.nome)}')">Editar</button>
+                            <button class="botao-mini editar" onclick="editarResponsavel(${r.id})">Editar</button>
                             <button class="botao-mini excluir" onclick="excluirResponsavel(${r.id})">Excluir</button>
                         ` : ''}
                     </span>
@@ -483,7 +499,9 @@
         }
     }
 
-    async function editarResponsavel(id, nomeAtual) {
+    async function editarResponsavel(id) {
+        const respAtual = responsaveis.find(r => r.id === id);
+        const nomeAtual = respAtual ? respAtual.nome : '';
         const novoNome = prompt('Novo nome do responsável:', nomeAtual);
         if (!novoNome || novoNome.trim() === '' || novoNome === nomeAtual) return;
 
@@ -527,14 +545,14 @@
         if (tipo === 'sala') {
             turmaId = document.getElementById('turmaParaLogin').value;
             if (!turmaId) return;
-            const turmaNome = turmas.find(t => t.id == turmaId)?.nome || '';
-            nome = `Sala ${turmaNome}`;
+            const turmaEncontrada = turmas.find(t => t.id == turmaId);
+            nome = `Sala ${turmaEncontrada ? turmaEncontrada.nome : ''}`;
             perfil = 'sala';
             turmaId = Number(turmaId);
         } else {
             nome = document.getElementById('nomeLogin').value.trim();
             if (!nome) return;
-            perfil = tipo; // 'secretaria' ou 'admin'
+            perfil = tipo;
             turmaId = null;
         }
 
@@ -565,8 +583,8 @@
         document.getElementById('listaLogins').innerHTML = usuarios.map(u => {
             const turma = turmas.find(t => t.id === u.turmaId);
             const rotulos = { admin: 'Diretora', secretaria: 'Secretaria', sala: 'Sala' };
-            const detalhe = turma ? `Sala — ${turma.nome}` : (rotulos[u.perfil] || u.perfil);
-            return `<li><span class="nome-item">${u.email}</span><span class="detalhe">${detalhe}</span></li>`;
+            const detalhe = turma ? `Sala — ${escaparHtml(turma.nome)}` : (rotulos[u.perfil] || u.perfil);
+            return `<li><span class="nome-item">${escaparHtml(u.email)}</span><span class="detalhe">${detalhe}</span></li>`;
         }).join('');
     }
 
@@ -585,6 +603,7 @@
             return;
         }
         document.getElementById('mensagemBusca').style.display = 'none';
+        resultadosBuscaAlunoAtual = dados;
 
         const resultado = document.getElementById('resultadoBuscaAluno');
         if (dados.length === 0) {
@@ -595,14 +614,17 @@
         resultado.innerHTML = dados.map(a => {
             const turma = turmas.find(t => t.id === a.turmaId);
             const turmaNome = turma ? turma.nome : `turma #${a.turmaId}`;
-            return `<li class="clicavel" onclick="selecionarAluno(${a.id}, '${escaparAspas(a.nome)}')">
-                    <span class="nome-item">${a.nome}</span>
-                    <span class="detalhe">${turmaNome}</span>
+            return `<li class="clicavel" onclick="selecionarAluno(${a.id})">
+                    <span class="nome-item">${escaparHtml(a.nome)}</span>
+                    <span class="detalhe">${escaparHtml(turmaNome)}</span>
                 </li>`;
         }).join('');
     }
 
-    async function selecionarAluno(alunoId, nomeAluno) {
+    async function selecionarAluno(alunoId) {
+        const alunoEncontrado = resultadosBuscaAlunoAtual.find(a => a.id === alunoId);
+        const nomeAluno = alunoEncontrado ? alunoEncontrado.nome : '';
+
         alunoSelecionadoId = alunoId;
         responsavelSelecionadoParaVincularId = null;
 
@@ -617,6 +639,7 @@
     async function carregarResponsaveisDoAluno() {
         const resposta = await fetch(`/api/responsaveis?alunoId=${alunoSelecionadoId}`);
         const vinculados = await resposta.json();
+        responsaveisDoAlunoAtual = vinculados;
 
         const lista = document.getElementById('listaResponsaveisDoAluno');
         if (vinculados.length === 0) {
@@ -626,15 +649,17 @@
 
         lista.innerHTML = vinculados.map(r => `
                 <li>
-                    <span class="nome-item">${r.nome}</span>
+                    <span class="nome-item">${escaparHtml(r.nome)}</span>
                     <span class="acoes">
-                        ${perfilAtual === 'admin' ? `<button class="botao-mini editar" onclick="editarResponsavelDoAluno(${r.id}, '${escaparAspas(r.nome)}')">Editar</button>` : ''}
+                        ${perfilAtual === 'admin' ? `<button class="botao-mini editar" onclick="editarResponsavelDoAluno(${r.id})">Editar</button>` : ''}
                         <button class="botao-mini excluir" onclick="removerVinculo(${r.id})">Remover</button>
                     </span>
                 </li>`).join('');
     }
 
-    async function editarResponsavelDoAluno(id, nomeAtual) {
+    async function editarResponsavelDoAluno(id) {
+        const respAtual = responsaveisDoAlunoAtual.find(r => r.id === id);
+        const nomeAtual = respAtual ? respAtual.nome : '';
         const novoNome = prompt('Novo nome do responsável:', nomeAtual);
         if (!novoNome || novoNome.trim() === '' || novoNome === nomeAtual) return;
 
@@ -672,13 +697,14 @@
         }
 
         resultado.innerHTML = encontrados.map(r =>
-            `<li class="clicavel" onclick="selecionarResponsavelParaVincular(${r.id}, '${escaparAspas(r.nome)}')">${r.nome}</li>`
+            `<li class="clicavel" onclick="selecionarResponsavelParaVincular(${r.id})">${escaparHtml(r.nome)}</li>`
         ).join('');
     }
 
-    function selecionarResponsavelParaVincular(id, nome) {
+    function selecionarResponsavelParaVincular(id) {
+        const respEncontrado = responsaveis.find(r => r.id === id);
         responsavelSelecionadoParaVincularId = id;
-        document.getElementById('buscaResponsavelVincular').value = nome;
+        document.getElementById('buscaResponsavelVincular').value = respEncontrado ? respEncontrado.nome : '';
         document.getElementById('resultadoBuscaResponsavelVincular').innerHTML = '';
     }
 
@@ -724,10 +750,6 @@
         el.className = 'mensagem ' + (sucesso ? 'sucesso' : 'erro');
         el.textContent = texto;
         setTimeout(() => { el.style.display = 'none'; }, 5000);
-    }
-
-    function escaparAspas(texto) {
-        return String(texto).replace(/'/g, "\\'");
     }
 
     aplicarPermissoesUI();

@@ -2,6 +2,7 @@ package app;
 
 import config.ConexaoBanco;
 import config.JwtUtil;
+import config.LimitadorTentativas;
 import jakarta.servlet.http.HttpServletRequest;
 import model.Usuario;
 import org.springframework.http.HttpStatus;
@@ -84,10 +85,18 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest requisicao) {
+        String email = requisicao.email() == null ? "" : requisicao.email();
+
+        if (LimitadorTentativas.estaBloqueado(email)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ErroResponse("Muitas tentativas de login. Tente novamente em alguns minutos."));
+        }
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             AutenticacaoService autenticacaoService = new AutenticacaoService(conexao);
             Usuario usuario = autenticacaoService.autenticar(requisicao.email(), requisicao.senha());
 
+            LimitadorTentativas.limpar(email);
             String token = JwtUtil.gerarToken(usuario);
 
             LoginResponse resposta = new LoginResponse(
@@ -97,6 +106,7 @@ public class AuthController {
 
         } catch (RegraNegocioException e) {
             // Credenciais inválidas -> 401 Unauthorized
+            LimitadorTentativas.registrarFalha(email);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErroResponse(e.getMessage()));
 
         } catch (SQLException e) {
