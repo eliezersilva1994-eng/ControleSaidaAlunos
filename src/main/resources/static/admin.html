@@ -13,16 +13,40 @@
             padding: 24px;
             color: #1a1a2e;
         }
-        .topo {
+        .cabecalho {
+            max-width: 1000px;
+            margin: 0 auto 20px;
+        }
+        .cabecalho-topo {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1000px;
-            margin: 0 auto 24px;
+            margin-bottom: 16px;
         }
-        .topo h1 { font-size: 22px; margin: 0; }
-        .topo .info-usuario { color: #6b7280; font-size: 13px; text-align: right; }
-        .topo a { color: #6b7280; font-size: 14px; }
+        .cabecalho-topo h1 { font-size: 20px; margin: 0; color: #6b7280; font-weight: 600; }
+        .info-usuario { color: #6b7280; font-size: 13px; text-align: right; }
+        .info-usuario a { color: #6b7280; font-size: 13px; }
+        .barra-abas {
+            display: flex;
+            gap: 4px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .aba {
+            background: none;
+            border: none;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+        .aba:hover { color: #4f46e5; }
+        .aba.ativa { color: #4f46e5; border-bottom-color: #4f46e5; }
+        .painel-conteudo { max-width: 1000px; margin: 20px auto 0; }
+        .painel-aba { display: none; }
+        .painel-aba.ativo { display: block; }
         .grade-secoes {
             max-width: 1000px;
             margin: 0 auto;
@@ -124,18 +148,27 @@
     </style>
 </head>
 <body>
-<div class="topo">
-    <h1>Administração</h1>
-    <div class="info-usuario">
-        <div id="nomeUsuarioLogado"></div>
-        <a href="#" onclick="sair()">Sair</a>
+<div class="cabecalho">
+    <div class="cabecalho-topo">
+        <h1 id="nomeEscola">Nome da Escola</h1>
+        <div class="info-usuario">
+            <div id="nomeUsuarioLogado"></div>
+            <a href="#" onclick="sair()">Sair</a>
+        </div>
     </div>
+    <nav class="barra-abas" id="barraAbas">
+        <button class="aba somente-admin" data-aba="painelTurmas" onclick="mostrarAba('painelTurmas')">Turmas</button>
+        <button class="aba" data-aba="painelAlunos" onclick="mostrarAba('painelAlunos')">Alunos</button>
+        <button class="aba" data-aba="painelResponsaveis" onclick="mostrarAba('painelResponsaveis')">Responsáveis</button>
+        <button class="aba somente-admin" data-aba="painelLogins" onclick="mostrarAba('painelLogins')">Logins</button>
+        <button class="aba" data-aba="painelRetirada" onclick="mostrarAba('painelRetirada')">Autorizar Retirada</button>
+    </nav>
 </div>
 
-<div class="grade-secoes">
+<div class="painel-conteudo">
 
     <!-- TURMAS (somente admin) -->
-    <div class="secao somente-admin" id="secaoTurmas">
+    <div class="secao painel-aba somente-admin" id="painelTurmas">
         <div class="secao-topo">
             <h2>Turmas</h2>
             <button class="botao-secundario" onclick="alternarLista('listaTurmas')">Ver lista</button>
@@ -149,7 +182,7 @@
     </div>
 
     <!-- ALUNOS -->
-    <div class="secao">
+    <div class="secao painel-aba" id="painelAlunos">
         <div class="secao-topo">
             <h2>Alunos</h2>
             <button class="botao-secundario" onclick="alternarLista('listaAlunos')">Ver lista</button>
@@ -166,7 +199,7 @@
     </div>
 
     <!-- RESPONSÁVEIS -->
-    <div class="secao">
+    <div class="secao painel-aba" id="painelResponsaveis">
         <div class="secao-topo">
             <h2>Responsáveis</h2>
             <button class="botao-secundario" onclick="alternarLista('listaResponsaveis')">Ver lista</button>
@@ -180,7 +213,7 @@
     </div>
 
     <!-- LOGINS (somente admin) -->
-    <div class="secao somente-admin" id="secaoLogins">
+    <div class="secao painel-aba somente-admin" id="painelLogins">
         <div class="secao-topo">
             <h2>Logins cadastrados</h2>
             <button class="botao-secundario" onclick="alternarLista('listaLogins', carregarLogins)">Ver lista</button>
@@ -214,7 +247,7 @@
     </div>
 
     <!-- AUTORIZAR RETIRADA (busca por aluno) -->
-    <div class="secao larga">
+    <div class="secao painel-aba" id="painelRetirada">
         <h2>Autorizar retirada</h2>
         <p style="font-size:13px; color:#6b7280; margin-top:0;">
             Busque o aluno pelo nome para ver e gerenciar quem está autorizado a retirá-lo.
@@ -245,6 +278,10 @@
 
 <script>
     // ---------- Autenticação ----------
+
+    // O nome da escola aqui é fixo por enquanto (texto no HTML). Quando o
+    // sistema atender mais de uma escola, isso deve vir de uma
+    // configuração por instalação, não ficar escrito direto no código.
 
     const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado') || 'null');
 
@@ -284,6 +321,15 @@
         }
         document.getElementById('nomeUsuarioLogado').textContent =
             `${usuarioLogado.nome} (${perfilAtual === 'admin' ? 'Diretora' : 'Secretaria'})`;
+    }
+
+    function mostrarAba(idAlvo) {
+        document.querySelectorAll('.painel-aba').forEach(painel => {
+            painel.classList.toggle('ativo', painel.id === idAlvo);
+        });
+        document.querySelectorAll('.aba').forEach(botao => {
+            botao.classList.toggle('ativa', botao.dataset.aba === idAlvo);
+        });
     }
 
     // ---------- Segurança: nunca inserir texto de fora direto no HTML ----------
@@ -753,6 +799,7 @@
     }
 
     aplicarPermissoesUI();
+    mostrarAba('painelAlunos');
     carregarTurmas();
     carregarResponsaveis();
 </script>
