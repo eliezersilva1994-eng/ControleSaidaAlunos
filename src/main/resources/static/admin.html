@@ -222,14 +222,16 @@
             <button class="botao-secundario" onclick="alternarLista('listaLogins', carregarLogins)">Ver lista</button>
         </div>
         <p style="font-size:13px; color:#8A7F72; margin-top:0;">
-            Cria um login. "Sala (TV)" fica vinculado a uma turma; os
-            outros dois são contas de acesso à administração.
+            Cria um login. "Sala (TV)" fica vinculado a uma turma;
+            "Totem" é o tablet da portaria; os outros dois são contas
+            de acesso à administração.
         </p>
         <div class="linha-form">
             <select id="tipoLogin" onchange="atualizarFormLogin()">
                 <option value="sala">Sala (TV de uma turma)</option>
                 <option value="secretaria">Secretaria</option>
-                <option value="admin">Admin (diretora)</option>
+                <option value="admin">Direção</option>
+                <option value="totem">Totem (tablet da portaria)</option>
             </select>
         </div>
         <div class="linha-form" id="linhaTurmaLogin">
@@ -323,7 +325,7 @@
             elementosSomenteAdmin.forEach(el => el.classList.add('oculto-permissao'));
         }
         document.getElementById('nomeUsuarioLogado').textContent =
-            `${usuarioLogado.nome} (${perfilAtual === 'admin' ? 'Diretora' : 'Secretaria'})`;
+            `${usuarioLogado.nome} (${perfilAtual === 'admin' ? 'Direção' : 'Secretaria'})`;
     }
 
     function mostrarAba(idAlvo) {
@@ -631,7 +633,7 @@
 
         document.getElementById('listaLogins').innerHTML = usuarios.map(u => {
             const turma = turmas.find(t => t.id === u.turmaId);
-            const rotulos = { admin: 'Diretora', secretaria: 'Secretaria', sala: 'Sala' };
+            const rotulos = { admin: 'Direção', secretaria: 'Secretaria', sala: 'Sala', totem: 'Totem' };
             const detalhe = turma ? `Sala — ${escaparHtml(turma.nome)}` : (rotulos[u.perfil] || u.perfil);
             return `<li><span class="nome-item">${escaparHtml(u.email)}</span><span class="detalhe">${detalhe}</span></li>`;
         }).join('');

@@ -37,8 +37,10 @@ public class ResponsavelController {
     }
 
     /**
-     * Com alunoId: público (o totem mostra os responsáveis autorizados de
-     * um aluno, sem login). Sem alunoId (lista todos): protegido, usado na
+     * Com alunoId: exige login do totem (ou admin) — antes era público,
+     * mas saber quem está autorizado a retirar uma criança específica é
+     * dado sensível e não deveria ficar aberto na internet.
+     * Sem alunoId (lista todos): protegido para admin/secretaria, usado na
      * tela de administração.
      */
     @GetMapping
@@ -51,6 +53,7 @@ public class ResponsavelController {
                 ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN, Usuario.PERFIL_SECRETARIA);
                 responsaveis = responsavelService.listarTodos();
             } else {
+                ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_TOTEM, Usuario.PERFIL_ADMIN);
                 responsaveis = responsavelService.listarPorAluno(alunoId);
             }
 

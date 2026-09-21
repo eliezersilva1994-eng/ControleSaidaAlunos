@@ -38,8 +38,9 @@ public class AutenticacaoService {
         }
         if (!Usuario.PERFIL_ADMIN.equals(perfil)
                 && !Usuario.PERFIL_SECRETARIA.equals(perfil)
-                && !Usuario.PERFIL_SALA.equals(perfil)) {
-            throw new RegraNegocioException("Perfil inválido. Use 'admin', 'secretaria' ou 'sala'.");
+                && !Usuario.PERFIL_SALA.equals(perfil)
+                && !Usuario.PERFIL_TOTEM.equals(perfil)) {
+            throw new RegraNegocioException("Perfil inválido. Use 'admin', 'secretaria', 'sala' ou 'totem'.");
         }
         if (usuarioDAO.existePorEmail(email)) {
             throw new RegraNegocioException("Já existe um usuário cadastrado com este e-mail.");

@@ -132,6 +132,9 @@
             if (dados.turmaId) {
                 // Login de sala: vai direto para o painel daquela turma.
                 window.location.href = `painel.html?turmaId=${dados.turmaId}`;
+            } else if (dados.perfil === 'totem') {
+                // Login do tablet da portaria: vai direto para o totem.
+                window.location.href = 'totem.html';
             } else {
                 // Conta sem sala fixa (ex: admin/secretaria) vai para o
                 // painel de administração.

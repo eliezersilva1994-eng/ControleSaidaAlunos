@@ -2,6 +2,8 @@ package app;
 
 import config.ConexaoBanco;
 import dao.RegistroSaidaDAO;
+import jakarta.servlet.http.HttpServletRequest;
+import model.Usuario;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +23,14 @@ import java.util.List;
 public class RegistroSaidaController {
 
     /**
-     * Totem: o responsável seleciona o aluno.
+     * Totem: o responsável seleciona o aluno. Exige login do tablet
+     * (perfil totem) — sem isso, qualquer um que soubesse a URL da API
+     * conseguiria chamar qualquer aluno.
      */
     @PostMapping("/chamar")
-    public ResponseEntity<?> chamar(@RequestBody ChamarAlunoRequest requisicao) {
+    public ResponseEntity<?> chamar(@RequestBody ChamarAlunoRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_TOTEM, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             RegistroSaidaService registroSaidaService = new RegistroSaidaService(conexao);
             int registroId = registroSaidaService.chamarAluno(requisicao.alunoId(), requisicao.responsavelId());
@@ -50,7 +56,7 @@ public class RegistroSaidaController {
             List<RegistroSaidaDAO.StatusAluno> status = registroSaidaService.statusPorTurma(turmaId);
 
             List<StatusAlunoResponse> resposta = status.stream()
-                    .map(s -> new StatusAlunoResponse(s.alunoId, s.nomeAluno, s.status))
+                    .map(s -> new StatusAlunoResponse(s.alunoId, s.nomeAluno, s.status, s.horario))
                     .toList();
             return ResponseEntity.ok(resposta);
 

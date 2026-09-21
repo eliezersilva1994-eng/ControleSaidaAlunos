@@ -9,9 +9,12 @@ public class Usuario {
     //   não cria logins novos
     // - sala: login fixo de uma turma (a TV), sempre com turmaId preenchido,
     //   vai direto para o painel daquela sala, sem acesso à administração
+    // - totem: login do tablet da portaria — sem ele, ninguém consegue
+    //   chamar aluno nem ver quais responsáveis são autorizados
     public static final String PERFIL_ADMIN = "admin";
     public static final String PERFIL_SECRETARIA = "secretaria";
     public static final String PERFIL_SALA = "sala";
+    public static final String PERFIL_TOTEM = "totem";
 
     private int id;
     private String nome;

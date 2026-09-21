@@ -96,7 +96,8 @@ public class RegistroSaidaDAO {
                     lista.add(new StatusAluno(
                             rs.getInt("aluno_id"),
                             rs.getString("nome"),
-                            status == null ? "aguardando" : status
+                            status == null ? "aguardando" : status,
+                            rs.getTimestamp("horario")
                     ));
                 }
             }
@@ -105,17 +106,20 @@ public class RegistroSaidaDAO {
     }
 
     /**
-     * Representação simples de linha do painel da sala: aluno + status atual do dia.
+     * Representação simples de linha do painel da sala: aluno + status atual
+     * do dia + o horário em que foi chamado (null se ainda aguardando).
      */
     public static class StatusAluno {
         public final int alunoId;
         public final String nomeAluno;
         public final String status;
+        public final java.sql.Timestamp horario;
 
-        public StatusAluno(int alunoId, String nomeAluno, String status) {
+        public StatusAluno(int alunoId, String nomeAluno, String status, java.sql.Timestamp horario) {
             this.alunoId = alunoId;
             this.nomeAluno = nomeAluno;
             this.status = status;
+            this.horario = horario;
         }
 
         @Override
