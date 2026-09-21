@@ -8,20 +8,20 @@
         * { box-sizing: border-box; }
         body {
             font-family: system-ui, sans-serif;
-            background: #f2f4f7;
+            background: #FBF4E8;
             margin: 0;
             min-height: 100vh;
             padding: 24px;
         }
         h1 {
             text-align: center;
-            color: #1a1a2e;
+            color: #4A3F35;
             font-size: 24px;
             margin-bottom: 4px;
         }
         p.instrucao {
             text-align: center;
-            color: #6b7280;
+            color: #8A7F72;
             margin-bottom: 24px;
         }
         .grade-opcoes {
@@ -32,18 +32,18 @@
             margin: 0 auto;
         }
         .opcao {
-            background: white;
-            border: 2px solid #e5e7eb;
+            background: #FFFDF8;
+            border: 2px solid #ecdfc9;
             border-radius: 12px;
             padding: 24px 16px;
             font-size: 17px;
             font-weight: 600;
-            color: #1a1a2e;
+            color: #4A3F35;
             cursor: pointer;
             text-align: center;
         }
         .opcao:active {
-            background: #4f46e5;
+            background: #E8823D;
             color: white;
         }
         .botao-voltar {
@@ -51,7 +51,7 @@
             margin: 24px auto 0;
             background: none;
             border: none;
-            color: #6b7280;
+            color: #8A7F72;
             font-size: 15px;
             cursor: pointer;
             text-decoration: underline;
@@ -61,11 +61,11 @@
             margin: 60px auto;
             text-align: center;
         }
-        .tela-confirmacao.sucesso h2 { color: #15803d; }
-        .tela-confirmacao.erro h2 { color: #b91c1c; }
+        .tela-confirmacao.sucesso h2 { color: #5A7A5E; }
+        .tela-confirmacao.erro h2 { color: #C1443C; }
         .vazio {
             text-align: center;
-            color: #9ca3af;
+            color: #b0a493;
             margin-top: 40px;
         }
         .escondido { display: none; }
@@ -94,7 +94,7 @@
 
 <div id="telaFinal" class="escondido tela-confirmacao">
     <h2 id="mensagemFinal"></h2>
-    <p id="detalheFinal" style="color:#6b7280;"></p>
+    <p id="detalheFinal" style="color:#8A7F72;"></p>
     <button class="botao-voltar" onclick="reiniciar()">← Voltar ao início</button>
 </div>
 
