@@ -1,6 +1,8 @@
 package app;
 
 import config.ConexaoBanco;
+import config.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import model.Usuario;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,17 +27,19 @@ import java.util.List;
 public class AuthController {
 
     /**
-     * Lista todos os usuários cadastrados, para a tela de administração
-     * (nunca inclui senha ou hash).
+     * Lista todos os usuários cadastrados. Só a diretora (admin) vê isso —
+     * é informação sobre quem tem acesso ao sistema.
      */
     @GetMapping("/usuarios")
-    public ResponseEntity<?> listar() {
+    public ResponseEntity<?> listar(HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             AutenticacaoService autenticacaoService = new AutenticacaoService(conexao);
             List<Usuario> usuarios = autenticacaoService.listarTodos();
 
             List<LoginResponse> resposta = usuarios.stream()
-                    .map(u -> new LoginResponse(u.getId(), u.getNome(), u.getEmail(), u.getPerfil(), u.getTurmaId()))
+                    .map(u -> new LoginResponse(u.getId(), u.getNome(), u.getEmail(), u.getPerfil(), u.getTurmaId(), null))
                     .toList();
             return ResponseEntity.ok(resposta);
 
@@ -45,16 +49,24 @@ public class AuthController {
         }
     }
 
+    /**
+     * Cria um novo login (admin, secretaria ou sala). Só a diretora (admin)
+     * pode criar contas novas.
+     */
     @PostMapping("/cadastrar-usuario")
-    public ResponseEntity<?> cadastrar(@RequestBody CadastroUsuarioRequest requisicao) {
+    public ResponseEntity<?> cadastrar(@RequestBody CadastroUsuarioRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             AutenticacaoService autenticacaoService = new AutenticacaoService(conexao);
             int id = autenticacaoService.cadastrar(
                     requisicao.nome(), requisicao.email(), requisicao.senha(),
                     requisicao.perfil(), requisicao.turmaId());
 
+            // token null: isto não é um login, é o admin criando a conta de
+            // outra pessoa — não faz sentido devolver um crachá de acesso.
             LoginResponse resposta = new LoginResponse(
-                    id, requisicao.nome(), requisicao.email(), requisicao.perfil(), requisicao.turmaId());
+                    id, requisicao.nome(), requisicao.email(), requisicao.perfil(), requisicao.turmaId(), null);
             return ResponseEntity.ok(resposta);
 
         } catch (RegraNegocioException e) {
@@ -66,14 +78,21 @@ public class AuthController {
         }
     }
 
+    /**
+     * Login: aberto a qualquer um que tenha e-mail/senha corretos — não
+     * exige token, já que é aqui que o token é gerado.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest requisicao) {
         try (Connection conexao = ConexaoBanco.conectar()) {
             AutenticacaoService autenticacaoService = new AutenticacaoService(conexao);
             Usuario usuario = autenticacaoService.autenticar(requisicao.email(), requisicao.senha());
 
+            String token = JwtUtil.gerarToken(usuario);
+
             LoginResponse resposta = new LoginResponse(
-                    usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.getPerfil(), usuario.getTurmaId());
+                    usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.getPerfil(),
+                    usuario.getTurmaId(), token);
             return ResponseEntity.ok(resposta);
 
         } catch (RegraNegocioException e) {

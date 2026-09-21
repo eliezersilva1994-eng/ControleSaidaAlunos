@@ -1,7 +1,9 @@
 package app;
 
 import config.ConexaoBanco;
+import jakarta.servlet.http.HttpServletRequest;
 import model.Turma;
+import model.Usuario;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +19,9 @@ import java.util.List;
 public class TurmaController {
 
     @PostMapping
-    public ResponseEntity<?> criar(@RequestBody TurmaRequest requisicao) {
+    public ResponseEntity<?> criar(@RequestBody TurmaRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             TurmaService turmaService = new TurmaService(conexao);
             int id = turmaService.inserir(requisicao.nome());
@@ -32,6 +36,10 @@ public class TurmaController {
         }
     }
 
+    /**
+     * Público (sem token): o totem precisa listar as turmas para o
+     * responsável escolher, antes de qualquer login existir naquele fluxo.
+     */
     @GetMapping
     public ResponseEntity<?> listarTodas() {
         try (Connection conexao = ConexaoBanco.conectar()) {
@@ -50,7 +58,9 @@ public class TurmaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable int id, @RequestBody NomeRequest requisicao) {
+    public ResponseEntity<?> atualizar(@PathVariable int id, @RequestBody NomeRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             TurmaService turmaService = new TurmaService(conexao);
             turmaService.atualizar(id, requisicao.nome());
@@ -66,7 +76,9 @@ public class TurmaController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> excluir(@PathVariable int id) {
+    public ResponseEntity<?> excluir(@PathVariable int id, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             TurmaService turmaService = new TurmaService(conexao);
             turmaService.excluir(id);

@@ -36,8 +36,10 @@ public class AutenticacaoService {
         if (senha == null || senha.length() < 6) {
             throw new RegraNegocioException("A senha precisa ter no mínimo 6 caracteres.");
         }
-        if (!Usuario.PERFIL_PROFESSOR.equals(perfil) && !Usuario.PERFIL_ADMIN.equals(perfil)) {
-            throw new RegraNegocioException("Perfil inválido. Use 'professor' ou 'admin'.");
+        if (!Usuario.PERFIL_ADMIN.equals(perfil)
+                && !Usuario.PERFIL_SECRETARIA.equals(perfil)
+                && !Usuario.PERFIL_SALA.equals(perfil)) {
+            throw new RegraNegocioException("Perfil inválido. Use 'admin', 'secretaria' ou 'sala'.");
         }
         if (usuarioDAO.existePorEmail(email)) {
             throw new RegraNegocioException("Já existe um usuário cadastrado com este e-mail.");

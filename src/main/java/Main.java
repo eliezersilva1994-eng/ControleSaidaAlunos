@@ -59,7 +59,7 @@ public class Main {
             }
 
             // 6. Autenticação: cadastro de uma professora e login
-            autenticacaoService.cadastrar("Carla Souza", "carla@escola.com", "senha123", Usuario.PERFIL_PROFESSOR, null);
+            autenticacaoService.cadastrar("Carla Souza", "carla@escola.com", "senha123", Usuario.PERFIL_ADMIN, null);
             System.out.println("\nProfessora cadastrada.");
 
             Usuario logada = autenticacaoService.autenticar("carla@escola.com", "senha123");
@@ -74,7 +74,7 @@ public class Main {
 
             // 8. Regra nova: e-mail duplicado no cadastro
             try {
-                autenticacaoService.cadastrar("Outra Carla", "carla@escola.com", "outraSenha", Usuario.PERFIL_PROFESSOR, null);
+                autenticacaoService.cadastrar("Outra Carla", "carla@escola.com", "outraSenha", Usuario.PERFIL_ADMIN, null);
             } catch (RegraNegocioException e) {
                 System.out.println("\nBloqueio esperado (e-mail duplicado): " + e.getMessage());
             }

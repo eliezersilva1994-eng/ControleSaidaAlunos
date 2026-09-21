@@ -1,7 +1,9 @@
 package app;
 
 import config.ConexaoBanco;
+import jakarta.servlet.http.HttpServletRequest;
 import model.Aluno;
+import model.Usuario;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +19,9 @@ import java.util.List;
 public class AlunoController {
 
     @PostMapping
-    public ResponseEntity<?> criar(@RequestBody AlunoRequest requisicao) {
+    public ResponseEntity<?> criar(@RequestBody AlunoRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             AlunoService alunoService = new AlunoService(conexao);
             int id = alunoService.inserir(requisicao.nome(), requisicao.turmaId());
@@ -33,20 +37,23 @@ public class AlunoController {
     }
 
     /**
-     * Lista alunos. Uso:
-     * GET /api/alunos?turmaId=1 — lista os alunos daquela turma
-     * GET /api/alunos?nome=ana — busca por nome, em qualquer turma
+     * GET /api/alunos?turmaId=1 — público: o totem precisa listar os alunos
+     * de uma turma sem estar logado.
+     * GET /api/alunos?nome=ana — protegido (admin/secretaria): é a busca
+     * usada na tela de administração.
      */
     @GetMapping
     public ResponseEntity<?> listar(
             @RequestParam(required = false) Integer turmaId,
-            @RequestParam(required = false) String nome) {
+            @RequestParam(required = false) String nome,
+            HttpServletRequest request) {
 
         try (Connection conexao = ConexaoBanco.conectar()) {
             AlunoService alunoService = new AlunoService(conexao);
             List<Aluno> alunos;
 
             if (nome != null && !nome.isBlank()) {
+                ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN, Usuario.PERFIL_SECRETARIA);
                 alunos = alunoService.buscarPorNome(nome);
             } else if (turmaId != null) {
                 alunos = alunoService.listarPorTurma(turmaId);
@@ -70,7 +77,9 @@ public class AlunoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable int id, @RequestBody NomeRequest requisicao) {
+    public ResponseEntity<?> atualizar(@PathVariable int id, @RequestBody NomeRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN, Usuario.PERFIL_SECRETARIA);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             AlunoService alunoService = new AlunoService(conexao);
             alunoService.atualizar(id, requisicao.nome());
@@ -86,7 +95,9 @@ public class AlunoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> excluir(@PathVariable int id) {
+    public ResponseEntity<?> excluir(@PathVariable int id, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             AlunoService alunoService = new AlunoService(conexao);
             alunoService.excluir(id);

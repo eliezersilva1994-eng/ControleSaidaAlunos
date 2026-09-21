@@ -2,8 +2,16 @@ package model;
 
 public class Usuario {
 
-    public static final String PERFIL_PROFESSOR = "professor";
+    // Perfis de acesso do sistema:
+    // - admin: acesso total (diretora) — cria/edita/exclui tudo
+    // - secretaria: acesso limitado — cadastra responsáveis, lista e edita
+    //   alunos, autoriza/remove retiradas; não gerencia turmas, não exclui,
+    //   não cria logins novos
+    // - sala: login fixo de uma turma (a TV), sempre com turmaId preenchido,
+    //   vai direto para o painel daquela sala, sem acesso à administração
     public static final String PERFIL_ADMIN = "admin";
+    public static final String PERFIL_SECRETARIA = "secretaria";
+    public static final String PERFIL_SALA = "sala";
 
     private int id;
     private String nome;

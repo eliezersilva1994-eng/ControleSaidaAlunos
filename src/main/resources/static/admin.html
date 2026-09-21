@@ -21,6 +21,7 @@
             margin: 0 auto 24px;
         }
         .topo h1 { font-size: 22px; margin: 0; }
+        .topo .info-usuario { color: #6b7280; font-size: 13px; text-align: right; }
         .topo a { color: #6b7280; font-size: 14px; }
         .grade-secoes {
             max-width: 1000px;
@@ -87,7 +88,7 @@
         }
         button:hover { background: #4338ca; }
         ul { list-style: none; padding: 0; margin: 10px 0 0; max-height: 220px; overflow-y: auto; }
-        ul.oculta { display: none; }
+        .oculta { display: none; }
         li {
             padding: 7px 8px;
             border-bottom: 1px solid #f0f0f0;
@@ -102,7 +103,6 @@
         li .acoes { display: flex; gap: 2px; }
         li.clicavel { cursor: pointer; }
         li.clicavel:hover { background: #f9fafb; }
-        li.selecionado { background: #eef2ff; }
         .mensagem {
             font-size: 14px;
             font-weight: 600;
@@ -120,18 +120,22 @@
             margin-top: 12px;
         }
         .caixa-selecionado h3 { font-size: 14px; margin: 0 0 8px; }
+        .somente-admin.oculto-permissao { display: none !important; }
     </style>
 </head>
 <body>
 <div class="topo">
     <h1>Administração</h1>
-    <a href="index.html">Sair</a>
+    <div class="info-usuario">
+        <div id="nomeUsuarioLogado"></div>
+        <a href="#" onclick="sair()">Sair</a>
+    </div>
 </div>
 
 <div class="grade-secoes">
 
-    <!-- TURMAS -->
-    <div class="secao">
+    <!-- TURMAS (somente admin) -->
+    <div class="secao somente-admin" id="secaoTurmas">
         <div class="secao-topo">
             <h2>Turmas</h2>
             <button class="botao-secundario" onclick="alternarLista('listaTurmas')">Ver lista</button>
@@ -153,7 +157,7 @@
         <div class="linha-form">
             <select id="turmaParaAluno"></select>
         </div>
-        <div class="linha-form">
+        <div class="linha-form somente-admin" id="linhaCriarAluno">
             <input type="text" id="nomeAluno" placeholder="Nome do aluno">
             <button onclick="criarAluno()">Adicionar</button>
         </div>
@@ -175,24 +179,35 @@
         <ul id="listaResponsaveis" class="oculta"></ul>
     </div>
 
-    <!-- LOGINS DE SALA -->
-    <div class="secao">
+    <!-- LOGINS DE SALA (somente admin) -->
+    <div class="secao somente-admin" id="secaoLogins">
         <div class="secao-topo">
             <h2>Logins cadastrados</h2>
             <button class="botao-secundario" onclick="alternarLista('listaLogins', carregarLogins)">Ver lista</button>
         </div>
         <p style="font-size:13px; color:#6b7280; margin-top:0;">
-            Cria um login fixo para a TV de uma turma.
+            Cria um login. "Sala (TV)" fica vinculado a uma turma; os
+            outros dois são contas de acesso à administração.
         </p>
         <div class="linha-form">
+            <select id="tipoLogin" onchange="atualizarFormLogin()">
+                <option value="sala">Sala (TV de uma turma)</option>
+                <option value="secretaria">Secretaria</option>
+                <option value="admin">Admin (diretora)</option>
+            </select>
+        </div>
+        <div class="linha-form" id="linhaTurmaLogin">
             <select id="turmaParaLogin"></select>
+        </div>
+        <div class="linha-form oculta" id="linhaNomeLogin">
+            <input type="text" id="nomeLogin" placeholder="Nome da pessoa">
         </div>
         <div class="linha-form">
             <input type="email" id="emailLogin" placeholder="E-mail (ex: sala-1a@escola.com)">
         </div>
         <div class="linha-form">
             <input type="password" id="senhaLogin" placeholder="Senha (mín. 6 caracteres)">
-            <button onclick="criarLoginSala()">Criar login</button>
+            <button onclick="criarLogin()">Criar login</button>
         </div>
         <div class="mensagem" id="mensagemLogin"></div>
         <ul id="listaLogins" class="oculta"></ul>
@@ -229,10 +244,56 @@
 </div>
 
 <script>
+    // ---------- Autenticação ----------
+
+    const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado') || 'null');
+
+    if (!usuarioLogado || !usuarioLogado.token ||
+        (usuarioLogado.perfil !== 'admin' && usuarioLogado.perfil !== 'secretaria')) {
+        window.location.href = 'index.html';
+    }
+
+    const perfilAtual = usuarioLogado.perfil;
+    const tokenAtual = usuarioLogado.token;
+
+    function headersComToken() {
+        return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenAtual };
+    }
+    function headersSoToken() {
+        return { 'Authorization': 'Bearer ' + tokenAtual };
+    }
+
+    function sair() {
+        localStorage.removeItem('usuarioLogado');
+        window.location.href = 'index.html';
+    }
+
+    /**
+     * Se a sessão expirou ou o token é inválido, o servidor responde 401
+     * — nesse caso, manda a pessoa logar de novo em vez de mostrar um
+     * erro confuso na tela.
+     */
+    async function tratarRespostaAuth(resposta) {
+        if (resposta.status === 401) {
+            alert('Sua sessão expirou. Faça login novamente.');
+            sair();
+            return null;
+        }
+        return await resposta.json();
+    }
+
+    function aplicarPermissoesUI() {
+        const elementosSomenteAdmin = document.querySelectorAll('.somente-admin');
+        if (perfilAtual !== 'admin') {
+            elementosSomenteAdmin.forEach(el => el.classList.add('oculto-permissao'));
+        }
+        document.getElementById('nomeUsuarioLogado').textContent =
+            `${usuarioLogado.nome} (${perfilAtual === 'admin' ? 'Diretora' : 'Secretaria'})`;
+    }
+
     let turmas = [];
     let responsaveis = [];
     let alunoSelecionadoId = null;
-    let alunoSelecionadoNome = '';
     let responsavelSelecionadoParaVincularId = null;
 
     function alternarLista(idLista, aoAbrir) {
@@ -242,7 +303,7 @@
         if (estavaOculta && aoAbrir) aoAbrir();
     }
 
-    // ---------- TURMAS ----------
+    // ---------- TURMAS (somente admin) ----------
 
     async function carregarTurmas() {
         const resposta = await fetch('/api/turmas');
@@ -271,11 +332,10 @@
         if (!nome) return;
 
         const resposta = await fetch('/api/turmas', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome })
+            method: 'POST', headers: headersComToken(), body: JSON.stringify({ nome })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemTurma', resposta.ok,
             resposta.ok ? `Turma "${nome}" adicionada com sucesso!` : dados.erro);
 
@@ -290,11 +350,10 @@
         if (!novoNome || novoNome.trim() === '' || novoNome === nomeAtual) return;
 
         const resposta = await fetch(`/api/turmas/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome: novoNome.trim() })
+            method: 'PUT', headers: headersComToken(), body: JSON.stringify({ nome: novoNome.trim() })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemTurma', resposta.ok, resposta.ok ? 'Turma atualizada!' : dados.erro);
         if (resposta.ok) await carregarTurmas();
     }
@@ -302,8 +361,9 @@
     async function excluirTurma(id) {
         if (!confirm('Excluir esta turma? Só é possível se não houver alunos nela.')) return;
 
-        const resposta = await fetch(`/api/turmas/${id}`, { method: 'DELETE' });
-        const dados = await resposta.json();
+        const resposta = await fetch(`/api/turmas/${id}`, { method: 'DELETE', headers: headersSoToken() });
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemTurma', resposta.ok, resposta.ok ? 'Turma excluída!' : dados.erro);
         if (resposta.ok) await carregarTurmas();
     }
@@ -318,12 +378,13 @@
     }
 
     function renderizarListaAlunos(alunos) {
+        const podeGerenciar = perfilAtual === 'admin' || perfilAtual === 'secretaria';
         document.getElementById('listaAlunos').innerHTML = alunos.map(a => `
                 <li>
                     <span class="nome-item">${a.nome} <span class="id-tag">#${a.id}</span></span>
                     <span class="acoes">
-                        <button class="botao-mini editar" onclick="editarAluno(${a.id}, '${escaparAspas(a.nome)}')">Editar</button>
-                        <button class="botao-mini excluir" onclick="excluirAluno(${a.id})">Excluir</button>
+                        ${podeGerenciar ? `<button class="botao-mini editar" onclick="editarAluno(${a.id}, '${escaparAspas(a.nome)}')">Editar</button>` : ''}
+                        ${perfilAtual === 'admin' ? `<button class="botao-mini excluir" onclick="excluirAluno(${a.id})">Excluir</button>` : ''}
                     </span>
                 </li>`).join('');
     }
@@ -338,11 +399,11 @@
         if (!nome || !turmaId) return;
 
         const resposta = await fetch('/api/alunos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: headersComToken(),
             body: JSON.stringify({ nome, turmaId: Number(turmaId) })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemAluno', resposta.ok,
             resposta.ok ? `Aluno "${nome}" adicionado com sucesso!` : dados.erro);
 
@@ -357,11 +418,10 @@
         if (!novoNome || novoNome.trim() === '' || novoNome === nomeAtual) return;
 
         const resposta = await fetch(`/api/alunos/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome: novoNome.trim() })
+            method: 'PUT', headers: headersComToken(), body: JSON.stringify({ nome: novoNome.trim() })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemAluno', resposta.ok, resposta.ok ? 'Aluno atualizado!' : dados.erro);
 
         if (resposta.ok) {
@@ -373,8 +433,9 @@
     async function excluirAluno(id) {
         if (!confirm('Excluir este aluno? Só é possível se não houver vínculos ou registros de saída.')) return;
 
-        const resposta = await fetch(`/api/alunos/${id}`, { method: 'DELETE' });
-        const dados = await resposta.json();
+        const resposta = await fetch(`/api/alunos/${id}`, { method: 'DELETE', headers: headersSoToken() });
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemAluno', resposta.ok, resposta.ok ? 'Aluno excluído!' : dados.erro);
 
         if (resposta.ok) {
@@ -386,15 +447,20 @@
     // ---------- RESPONSÁVEIS ----------
 
     async function carregarResponsaveis() {
-        const resposta = await fetch('/api/responsaveis');
-        responsaveis = await resposta.json();
+        const resposta = await fetch('/api/responsaveis', { headers: headersSoToken() });
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
+        responsaveis = dados;
 
+        const podeEditarExcluir = perfilAtual === 'admin';
         document.getElementById('listaResponsaveis').innerHTML = responsaveis.map(r => `
                 <li>
                     <span class="nome-item">${r.nome} <span class="id-tag">#${r.id}</span></span>
                     <span class="acoes">
-                        <button class="botao-mini editar" onclick="editarResponsavel(${r.id}, '${escaparAspas(r.nome)}')">Editar</button>
-                        <button class="botao-mini excluir" onclick="excluirResponsavel(${r.id})">Excluir</button>
+                        ${podeEditarExcluir ? `
+                            <button class="botao-mini editar" onclick="editarResponsavel(${r.id}, '${escaparAspas(r.nome)}')">Editar</button>
+                            <button class="botao-mini excluir" onclick="excluirResponsavel(${r.id})">Excluir</button>
+                        ` : ''}
                     </span>
                 </li>`).join('');
     }
@@ -404,11 +470,10 @@
         if (!nome) return;
 
         const resposta = await fetch('/api/responsaveis', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, fotoUrl: null })
+            method: 'POST', headers: headersComToken(), body: JSON.stringify({ nome, fotoUrl: null })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemResponsavel', resposta.ok,
             resposta.ok ? `Responsável "${nome}" adicionado com sucesso!` : dados.erro);
 
@@ -423,11 +488,11 @@
         if (!novoNome || novoNome.trim() === '' || novoNome === nomeAtual) return;
 
         const resposta = await fetch(`/api/responsaveis/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'PUT', headers: headersComToken(),
             body: JSON.stringify({ nome: novoNome.trim(), fotoUrl: null })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemResponsavel', resposta.ok, resposta.ok ? 'Responsável atualizado!' : dados.erro);
         if (resposta.ok) await carregarResponsaveis();
     }
@@ -435,37 +500,57 @@
     async function excluirResponsavel(id) {
         if (!confirm('Excluir este responsável? Só é possível se não houver vínculos ou registros de saída.')) return;
 
-        const resposta = await fetch(`/api/responsaveis/${id}`, { method: 'DELETE' });
-        const dados = await resposta.json();
+        const resposta = await fetch(`/api/responsaveis/${id}`, { method: 'DELETE', headers: headersSoToken() });
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemResponsavel', resposta.ok, resposta.ok ? 'Responsável excluído!' : dados.erro);
         if (resposta.ok) await carregarResponsaveis();
     }
 
-    // ---------- LOGINS ----------
+    // ---------- LOGINS (somente admin) ----------
 
-    async function criarLoginSala() {
-        const turmaId = document.getElementById('turmaParaLogin').value;
+    function atualizarFormLogin() {
+        const tipo = document.getElementById('tipoLogin').value;
+        const ehSala = tipo === 'sala';
+        document.getElementById('linhaTurmaLogin').classList.toggle('oculta', !ehSala);
+        document.getElementById('linhaNomeLogin').classList.toggle('oculta', ehSala);
+    }
+
+    async function criarLogin() {
+        const tipo = document.getElementById('tipoLogin').value;
         const email = document.getElementById('emailLogin').value.trim();
         const senha = document.getElementById('senhaLogin').value;
-        if (!turmaId || !email || !senha) return;
+        if (!email || !senha) return;
 
-        const turmaNome = turmas.find(t => t.id == turmaId)?.nome || '';
+        let nome, perfil, turmaId;
+
+        if (tipo === 'sala') {
+            turmaId = document.getElementById('turmaParaLogin').value;
+            if (!turmaId) return;
+            const turmaNome = turmas.find(t => t.id == turmaId)?.nome || '';
+            nome = `Sala ${turmaNome}`;
+            perfil = 'sala';
+            turmaId = Number(turmaId);
+        } else {
+            nome = document.getElementById('nomeLogin').value.trim();
+            if (!nome) return;
+            perfil = tipo; // 'secretaria' ou 'admin'
+            turmaId = null;
+        }
 
         const resposta = await fetch('/api/cadastrar-usuario', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                nome: `Sala ${turmaNome}`, email, senha,
-                perfil: 'professor', turmaId: Number(turmaId)
-            })
+            method: 'POST', headers: headersComToken(),
+            body: JSON.stringify({ nome, email, senha, perfil, turmaId })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemLogin', resposta.ok,
             resposta.ok ? `Login "${email}" criado com sucesso!` : dados.erro);
 
         if (resposta.ok) {
             document.getElementById('emailLogin').value = '';
             document.getElementById('senhaLogin').value = '';
+            document.getElementById('nomeLogin').value = '';
             if (!document.getElementById('listaLogins').classList.contains('oculta')) {
                 carregarLogins();
             }
@@ -473,12 +558,14 @@
     }
 
     async function carregarLogins() {
-        const resposta = await fetch('/api/usuarios');
-        const usuarios = await resposta.json();
+        const resposta = await fetch('/api/usuarios', { headers: headersSoToken() });
+        const usuarios = await tratarRespostaAuth(resposta);
+        if (!usuarios) return;
 
         document.getElementById('listaLogins').innerHTML = usuarios.map(u => {
             const turma = turmas.find(t => t.id === u.turmaId);
-            const detalhe = turma ? turma.nome : 'sem turma fixa';
+            const rotulos = { admin: 'Diretora', secretaria: 'Secretaria', sala: 'Sala' };
+            const detalhe = turma ? `Sala — ${turma.nome}` : (rotulos[u.perfil] || u.perfil);
             return `<li><span class="nome-item">${u.email}</span><span class="detalhe">${detalhe}</span></li>`;
         }).join('');
     }
@@ -489,8 +576,9 @@
         const nome = document.getElementById('buscaAluno').value.trim();
         if (!nome) return;
 
-        const resposta = await fetch(`/api/alunos?nome=${encodeURIComponent(nome)}`);
-        const dados = await resposta.json();
+        const resposta = await fetch(`/api/alunos?nome=${encodeURIComponent(nome)}`, { headers: headersSoToken() });
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
 
         if (!resposta.ok) {
             mostrarMensagem('mensagemBusca', false, dados.erro);
@@ -516,7 +604,6 @@
 
     async function selecionarAluno(alunoId, nomeAluno) {
         alunoSelecionadoId = alunoId;
-        alunoSelecionadoNome = nomeAluno;
         responsavelSelecionadoParaVincularId = null;
 
         document.getElementById('caixaAlunoSelecionado').style.display = 'block';
@@ -541,7 +628,7 @@
                 <li>
                     <span class="nome-item">${r.nome}</span>
                     <span class="acoes">
-                        <button class="botao-mini editar" onclick="editarResponsavelDoAluno(${r.id}, '${escaparAspas(r.nome)}')">Editar</button>
+                        ${perfilAtual === 'admin' ? `<button class="botao-mini editar" onclick="editarResponsavelDoAluno(${r.id}, '${escaparAspas(r.nome)}')">Editar</button>` : ''}
                         <button class="botao-mini excluir" onclick="removerVinculo(${r.id})">Remover</button>
                     </span>
                 </li>`).join('');
@@ -552,11 +639,11 @@
         if (!novoNome || novoNome.trim() === '' || novoNome === nomeAtual) return;
 
         const resposta = await fetch(`/api/responsaveis/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'PUT', headers: headersComToken(),
             body: JSON.stringify({ nome: novoNome.trim(), fotoUrl: null })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemVinculo', resposta.ok, resposta.ok ? 'Responsável atualizado!' : dados.erro);
 
         if (resposta.ok) {
@@ -565,11 +652,6 @@
         }
     }
 
-    /**
-     * Filtra a lista de responsáveis já carregada em memória (client-side),
-     * sem precisar de uma nova requisição — rápido mesmo com muitos
-     * responsáveis cadastrados.
-     */
     function filtrarResponsaveisParaVincular() {
         const termo = document.getElementById('buscaResponsavelVincular').value.trim().toLowerCase();
         responsavelSelecionadoParaVincularId = null;
@@ -607,11 +689,11 @@
         }
 
         const resposta = await fetch('/api/responsaveis/vincular', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: headersComToken(),
             body: JSON.stringify({ alunoId: alunoSelecionadoId, responsavelId: responsavelSelecionadoParaVincularId })
         });
-        const dados = await resposta.json();
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemVinculo', resposta.ok,
             resposta.ok ? 'Responsável autorizado com sucesso!' : dados.erro);
 
@@ -627,8 +709,9 @@
 
         const resposta = await fetch(
             `/api/responsaveis/vincular?alunoId=${alunoSelecionadoId}&responsavelId=${responsavelId}`,
-            { method: 'DELETE' });
-        const dados = await resposta.json();
+            { method: 'DELETE', headers: headersSoToken() });
+        const dados = await tratarRespostaAuth(resposta);
+        if (!dados) return;
         mostrarMensagem('mensagemVinculo', resposta.ok, resposta.ok ? 'Vínculo removido!' : dados.erro);
 
         if (resposta.ok) await carregarResponsaveisDoAluno();
@@ -647,6 +730,7 @@
         return String(texto).replace(/'/g, "\\'");
     }
 
+    aplicarPermissoesUI();
     carregarTurmas();
     carregarResponsaveis();
 </script>

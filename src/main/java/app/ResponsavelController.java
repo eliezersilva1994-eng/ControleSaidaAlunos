@@ -1,7 +1,9 @@
 package app;
 
 import config.ConexaoBanco;
+import jakarta.servlet.http.HttpServletRequest;
 import model.Responsavel;
+import model.Usuario;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +19,9 @@ import java.util.List;
 public class ResponsavelController {
 
     @PostMapping
-    public ResponseEntity<?> criar(@RequestBody ResponsavelRequest requisicao) {
+    public ResponseEntity<?> criar(@RequestBody ResponsavelRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN, Usuario.PERFIL_SECRETARIA);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
             int id = responsavelService.inserir(requisicao.nome(), requisicao.fotoUrl());
@@ -33,17 +37,22 @@ public class ResponsavelController {
     }
 
     /**
-     * Sem alunoId: lista todos os responsáveis cadastrados (usado na tela
-     * de administração). Com alunoId: lista só os autorizados para aquele
-     * aluno específico (usado no totem e na gestão de vínculos).
+     * Com alunoId: público (o totem mostra os responsáveis autorizados de
+     * um aluno, sem login). Sem alunoId (lista todos): protegido, usado na
+     * tela de administração.
      */
     @GetMapping
-    public ResponseEntity<?> listar(@RequestParam(required = false) Integer alunoId) {
+    public ResponseEntity<?> listar(@RequestParam(required = false) Integer alunoId, HttpServletRequest request) {
         try (Connection conexao = ConexaoBanco.conectar()) {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
-            List<Responsavel> responsaveis = (alunoId == null)
-                    ? responsavelService.listarTodos()
-                    : responsavelService.listarPorAluno(alunoId);
+            List<Responsavel> responsaveis;
+
+            if (alunoId == null) {
+                ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN, Usuario.PERFIL_SECRETARIA);
+                responsaveis = responsavelService.listarTodos();
+            } else {
+                responsaveis = responsavelService.listarPorAluno(alunoId);
+            }
 
             List<ResponsavelResponse> resposta = responsaveis.stream()
                     .map(r -> new ResponsavelResponse(r.getId(), r.getNome()))
@@ -60,7 +69,9 @@ public class ResponsavelController {
      * Autoriza um responsável a retirar um aluno específico.
      */
     @PostMapping("/vincular")
-    public ResponseEntity<?> vincular(@RequestBody VincularRequest requisicao) {
+    public ResponseEntity<?> vincular(@RequestBody VincularRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN, Usuario.PERFIL_SECRETARIA);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
             responsavelService.vincularAluno(requisicao.alunoId(), requisicao.responsavelId());
@@ -79,7 +90,9 @@ public class ResponsavelController {
      * Remove a autorização de um responsável para retirar um aluno.
      */
     @DeleteMapping("/vincular")
-    public ResponseEntity<?> desvincular(@RequestParam int alunoId, @RequestParam int responsavelId) {
+    public ResponseEntity<?> desvincular(@RequestParam int alunoId, @RequestParam int responsavelId, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN, Usuario.PERFIL_SECRETARIA);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
             responsavelService.desvincularAluno(alunoId, responsavelId);
@@ -92,7 +105,9 @@ public class ResponsavelController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable int id, @RequestBody ResponsavelRequest requisicao) {
+    public ResponseEntity<?> atualizar(@PathVariable int id, @RequestBody ResponsavelRequest requisicao, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
             responsavelService.atualizar(id, requisicao.nome(), requisicao.fotoUrl());
@@ -108,7 +123,9 @@ public class ResponsavelController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> excluir(@PathVariable int id) {
+    public ResponseEntity<?> excluir(@PathVariable int id, HttpServletRequest request) {
+        ContextoAutenticacao.exigirPerfil(request, Usuario.PERFIL_ADMIN);
+
         try (Connection conexao = ConexaoBanco.conectar()) {
             ResponsavelService responsavelService = new ResponsavelService(conexao);
             responsavelService.excluir(id);
