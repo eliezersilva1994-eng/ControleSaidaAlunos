@@ -46,6 +46,21 @@
             background: #E8823D;
             color: white;
         }
+        /* #listaTurmas usa linhas por ano, não a grade padrão das outras telas */
+        #listaTurmas { display: block; }
+        .linha-turmas {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .linha-turmas .rotulo-linha {
+            font-weight: 700;
+            font-size: 14px;
+            color: #8A7F72;
+            min-width: 78px;
+        }
         .botao-voltar {
             display: block;
             margin: 24px auto 0;
@@ -140,18 +155,38 @@
         const resposta = await fetch('/api/turmas');
         const turmas = await resposta.json();
 
+        // Agrupa as turmas pelo mesmo número usado para definir a cor
+        // (ex: "1º Ano A" e "1º Ano B" caem no grupo 1), para que cada
+        // ano ocupe sua própria linha na tela.
+        const grupos = {};
+        for (const turma of turmas) {
+            const numeroEncontrado = turma.nome.match(/(\d+)/);
+            const ano = numeroEncontrado ? parseInt(numeroEncontrado[1], 10) : 0;
+            if (!grupos[ano]) grupos[ano] = [];
+            grupos[ano].push(turma);
+        }
+        const anosOrdenados = Object.keys(grupos).map(Number).sort((a, b) => a - b);
+
         const lista = document.getElementById('listaTurmas');
         lista.innerHTML = '';
-        for (const turma of turmas) {
-            const cor = corParaTurma(turma.nome);
-            const botao = document.createElement('div');
-            botao.className = 'opcao';
-            botao.style.background = cor.fundo;
-            botao.style.color = cor.texto;
-            botao.style.borderColor = cor.fundo;
-            botao.textContent = turma.nome;
-            botao.onclick = () => selecionarTurma(turma);
-            lista.appendChild(botao);
+
+        for (const ano of anosOrdenados) {
+            const linha = document.createElement('div');
+            linha.className = 'linha-turmas';
+
+            for (const turma of grupos[ano]) {
+                const cor = corParaTurma(turma.nome);
+                const botao = document.createElement('div');
+                botao.className = 'opcao';
+                botao.style.background = cor.fundo;
+                botao.style.color = cor.texto;
+                botao.style.borderColor = cor.fundo;
+                botao.textContent = turma.nome;
+                botao.onclick = () => selecionarTurma(turma);
+                linha.appendChild(botao);
+            }
+
+            lista.appendChild(linha);
         }
     }
 
