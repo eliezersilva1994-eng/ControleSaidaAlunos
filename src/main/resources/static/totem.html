@@ -82,6 +82,9 @@
 <div id="telaAluno" class="escondido">
     <h1>Retirada de Aluno</h1>
     <p class="instrucao">Selecione o aluno</p>
+    <p style="text-align:center; margin-bottom:16px;">
+        <span id="etiquetaTurma" style="display:inline-block; padding:6px 16px; border-radius:999px; font-weight:700; font-size:14px;"></span>
+    </p>
     <div class="grade-opcoes" id="listaAlunos"></div>
     <button class="botao-voltar" onclick="voltarParaTurmas()">← Voltar</button>
 </div>
@@ -115,6 +118,24 @@
     let turmaSelecionada = null;
     let alunoSelecionado = null;
 
+    // Cores da nossa paleta, uma para cada "ano" — identifica cada
+    // turma pelo número no início do nome (ex: "1º Ano A" -> 1).
+    const CORES_ANO = [
+        { fundo: '#7EB6D9', texto: 'white' },   // azul
+        { fundo: '#8FBF7F', texto: 'white' },   // verde
+        { fundo: '#F0C75E', texto: '#4A3F35' }, // amarelo
+        { fundo: '#E88A8A', texto: 'white' },   // coral
+        { fundo: '#C9A8D9', texto: 'white' },   // lilás
+        { fundo: '#E8823D', texto: 'white' },   // laranja
+    ];
+
+    function corParaTurma(nome) {
+        const numeroEncontrado = nome.match(/(\d+)/);
+        const indice = numeroEncontrado ? parseInt(numeroEncontrado[1], 10) - 1 : 0;
+        const posicao = ((indice % CORES_ANO.length) + CORES_ANO.length) % CORES_ANO.length;
+        return CORES_ANO[posicao];
+    }
+
     async function carregarTurmas() {
         const resposta = await fetch('/api/turmas');
         const turmas = await resposta.json();
@@ -122,8 +143,12 @@
         const lista = document.getElementById('listaTurmas');
         lista.innerHTML = '';
         for (const turma of turmas) {
+            const cor = corParaTurma(turma.nome);
             const botao = document.createElement('div');
             botao.className = 'opcao';
+            botao.style.background = cor.fundo;
+            botao.style.color = cor.texto;
+            botao.style.borderColor = cor.fundo;
             botao.textContent = turma.nome;
             botao.onclick = () => selecionarTurma(turma);
             lista.appendChild(botao);
@@ -133,6 +158,12 @@
     async function selecionarTurma(turma) {
         turmaSelecionada = turma;
         mostrarTela('telaAluno');
+
+        const cor = corParaTurma(turma.nome);
+        const etiqueta = document.getElementById('etiquetaTurma');
+        etiqueta.textContent = turma.nome;
+        etiqueta.style.background = cor.fundo;
+        etiqueta.style.color = cor.texto;
 
         const resposta = await fetch(`/api/alunos?turmaId=${turma.id}`);
         const alunos = await resposta.json();
